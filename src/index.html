@@ -90,7 +90,7 @@
             cached vision-language prefix is consumed by a cross-attending action expert over several solver steps.
           </p>
           <p>
-            One runtime serves seven architectures spanning six backbone families and four action-head families behind
+            One runtime serves seven architectures spanning six backbone families and five action-head implementations behind
             one request/response protocol. On LIBERO-Object, the engine matches reference behavior within one episode out
             of 200, runs BitVLA at 100% success in 1.3 GiB of memory, and carries the same bundle from an RTX 3060 down
             to an 8 GB embedded module. A cross-hardware roofline analysis shows that batch-1 VLA inference is
@@ -136,8 +136,8 @@
               <span>backbone families</span>
             </article>
             <article class="metric">
-              <strong>4</strong>
-              <span>action-head families</span>
+              <strong>5</strong>
+              <span>action-head implementations</span>
             </article>
             <article class="metric">
               <strong>1.3 GiB</strong>
@@ -182,7 +182,7 @@
               <div class="contribution-tags">
                 <em>7 architectures</em>
                 <em>6 backbones</em>
-                <em>4 action heads</em>
+                <em>5 action-head implementations</em>
               </div>
             </article>
             <article>

@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="vla.cpp is a portable C++ inference runtime for vision-language-action models, built on llama.cpp."
+    >
+    <title>vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="#top">vla.cpp</a>
+        <div class="nav-links">
+          <a href="#abstract">Abstract</a>
+          <a href="#media">Media</a>
+          <a href="#architecture">Architecture</a>
+          <a href="#contributions">Contributions</a>
+          <a href="#method">Method</a>
+          <a href="#results">Leaderboard</a>
+          <a href="#memory">Memory</a>
+          <a href="#comparison">Comparison</a>
+          <a href="#citation">BibTeX</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="container hero-inner">
+          <p class="eyebrow">CoRL 2026 submission</p>
+          <h1>vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models</h1>
+          <p class="lead">
+            A portable C++ runtime built on <span class="mono">llama.cpp</span> for serving flow-matching and diffusion
+            VLA policies from compact model bundles across workstation and embedded robot hardware.
+          </p>
+          <p class="authors">
+            Khanh D. Nguyen, Hung T. Ho, Chinh T. Nguyen, Thanh Q. Duong, Linh D. Le, Vien A. Ngo, and An T. Le
+          </p>
+          <div class="actions" aria-label="Release links">
+            <span class="button disabled" aria-disabled="true">Paper coming soon</span>
+            <span class="button disabled" aria-disabled="true">Code coming soon</span>
+            <span class="button disabled" aria-disabled="true">Models coming soon</span>
+            <a class="button secondary" href="#citation">BibTeX</a>
+          </div>
+          <p class="release-note">Code, converters, model bundles, and benchmark scaffolds will be linked here after release.</p>
+          <div class="claim-strip" aria-label="Core contributions">
+            <article>
+              <strong>ggml-class VLA runtime</strong>
+              <span>To our knowledge, the first native flow-matching and diffusion action-head server on llama.cpp.</span>
+            </article>
+            <article>
+              <strong>One binary, seven architectures</strong>
+              <span>Shared request/response protocol and bundle format across VLA families.</span>
+            </article>
+            <article>
+              <strong>Edge deployment focus</strong>
+              <span>Measured from RTX 3060 down to Jetson modules with an 8 GB unified-memory floor.</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section media-section" id="media">
+        <div class="container">
+          <div class="media-layout">
+            <div class="media-stack" aria-label="main demonstration video">
+              <figure class="media-card showcase-card">
+                <div class="showcase-video-shell">
+                  <div class="showcase-placeholder" aria-label="main demonstration video coming soon">
+                    <img src="assets/showcase/coming-soon.png" alt="coming soon" />
+                  </div>
+                </div>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="abstract">
+        <div class="container narrow">
+          <h2>Abstract</h2>
+          <p>
+            Vision-language-action policies are typically shipped as Python/PyTorch stacks that assume a
+            workstation-class GPU, which mismatches the embedded hardware robots actually carry.
+            <span class="mono">vla.cpp</span> is a portable C++ inference runtime that serves the VLA pattern in which a
+            cached vision-language prefix is consumed by a cross-attending action expert over several solver steps.
+          </p>
+          <p>
+            One runtime serves seven architectures spanning six backbone families and four action-head families behind
+            one request/response protocol. On LIBERO-Object, the engine matches reference behavior within one episode out
+            of 200, runs BitVLA at 100% success in 1.3 GiB of memory, and carries the same bundle from an RTX 3060 down
+            to an 8 GB embedded module. A cross-hardware roofline analysis shows that batch-1 VLA inference is
+            compute-bound; an IMMA ladder GEMM derived from that analysis cuts BitVLA per-step latency by 4.5x.
+          </p>
+          <div class="keyword-list" aria-label="Keywords">
+            <span>VLA inference</span>
+            <span>llama.cpp</span>
+            <span>GGUF bundles</span>
+            <span>LIBERO-Object</span>
+            <span>ALOHA arm</span>
+            <span>edge deployment</span>
+            <span>roofline analysis</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section tinted" id="architecture">
+        <div class="container">
+          <h2>System Architecture</h2>
+          <figure class="figure">
+            <img
+              src="assets/vla-cpp-diagram-20260529.svg"
+              alt="vla.cpp runtime architecture showing client observations, a stateless server, a GGUF bundle, and action chunks."
+              width="821"
+              height="259"
+            >
+            <figcaption>Unified C++ serving path for flow-matching and diffusion VLA action heads.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section tinted" aria-labelledby="highlights-title">
+        <div class="container">
+          <h2 id="highlights-title">Highlights</h2>
+          <div class="metric-grid">
+            <article class="metric">
+              <strong>7</strong>
+              <span>VLA architectures</span>
+            </article>
+            <article class="metric">
+              <strong>6</strong>
+              <span>backbone families</span>
+            </article>
+            <article class="metric">
+              <strong>4</strong>
+              <span>action-head families</span>
+            </article>
+            <article class="metric">
+              <strong>1.3 GiB</strong>
+              <span>BitVLA runtime footprint</span>
+            </article>
+            <article class="metric">
+              <strong>7.95x</strong>
+              <span>SmolVLA step-latency speedup</span>
+            </article>
+            <article class="metric">
+              <strong>87.5%</strong>
+              <span>ALOHA closed-loop success</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="contributions">
+        <div class="container">
+          <h2>Key Contributions</h2>
+          <div class="contribution-grid">
+            <article>
+              <span>01</span>
+              <h3>Unified native runtime</h3>
+              <p>
+                A llama.cpp-based C++ server loads one self-contained bundle format and serves flow-matching or diffusion
+                VLA action heads through a shared request/response path.
+              </p>
+              <div class="contribution-tags">
+                <em>GGUF metadata</em>
+                <em>ZeroMQ serving</em>
+                <em>Protobuf actions</em>
+              </div>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Deployment-scale benchmarking</h3>
+              <p>
+                LIBERO-Object, memory-tier, latency, and roofline measurements show how the same runtime behaves from
+                RTX 3060 workstations down to Jetson-class robot hardware.
+              </p>
+              <div class="contribution-tags">
+                <em>7 architectures</em>
+                <em>6 backbones</em>
+                <em>4 action heads</em>
+              </div>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Real-arm evidence path</h3>
+              <p>
+                The ALOHA section pairs pytorch and vla.cpp trials by task and trial number, with setup photos, aggregate
+                success rates, latency snapshots, and upload slots for the full evidence set.
+              </p>
+              <div class="contribution-tags">
+                <em>40 trials per engine</em>
+                <em>task-level SR</em>
+                <em>paired videos</em>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="method">
+        <div class="container">
+          <h2>Method</h2>
+          <p class="section-intro">
+            <span class="mono">vla.cpp</span> runs as a stateless C++ server paired with a lightweight client. The server
+            loads a self-contained GGUF bundle once, decodes observations from a Protobuf request, runs VLA inference,
+            denormalizes actions, and returns an action chunk over ZeroMQ.
+          </p>
+          <div class="feature-list">
+            <article>
+              <h3>Unified control flow</h3>
+              <p>
+                Flow-matching and diffusion action heads map onto one VLA inference path instead of separate per-model
+                serving stacks.
+              </p>
+            </article>
+            <article>
+              <h3>Reusable prefix cache</h3>
+              <p>
+                The vision-language prefix is encoded once per observation and reused by cross-attention across solver
+                steps.
+              </p>
+            </article>
+            <article>
+              <h3>Bundle-local metadata</h3>
+              <p>
+                Model weights, architecture configuration, and action/state normalization statistics travel with the
+                runtime artifact.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section tinted" id="results">
+        <div class="container">
+          <h2>Leaderboard</h2>
+          <p class="section-intro">
+            The main success leaderboards are split by benchmark: LIBERO-Object simulation reports one aggregate success
+            rate over 200 episodes per model, while the real ALOHA arm reports task-level and overall success over the
+            available trial set for each engine. Latency, roofline, memory, and video evidence are supporting deployment
+            measurements.
+          </p>
+          <div class="result-tabs" aria-label="Result categories">
+            <span>LIBERO-Object leaderboard</span>
+            <span>Real ALOHA leaderboard</span>
+            <span>ALOHA video evidence</span>
+            <span>Latency and roofline</span>
+            <span>Memory tiers</span>
+          </div>
+
+          <div class="table-block">
+            <h3>LIBERO-Object Simulator Leaderboard</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Model</th>
+                    <th>Backbone</th>
+                    <th>Chunk</th>
+                    <th>SR (200 eps)</th>
+                    <th>Step</th>
+                    <th>Inference</th>
+                    <th>VRAM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="best-row"><td>1</td><td>BitVLA</td><td>BitNet-SigLIP</td><td>8</td><td>100.0%</td><td>37.85 ms</td><td>235.9 ms</td><td>1312 MiB</td></tr>
+                  <tr><td>2</td><td>GR00T-N1.7</td><td>Cosmos</td><td>16</td><td>98.0%</td><td>10.26 ms</td><td>84.1 ms</td><td>6302 MiB</td></tr>
+                  <tr><td>3</td><td>GR00T-N1.6</td><td>Eagle</td><td>16</td><td>86.5%</td><td>10.29 ms</td><td>83.6 ms</td><td>6048 MiB</td></tr>
+                  <tr><td>4</td><td>GR00T-N1.5</td><td>Eagle</td><td>16</td><td>96.0%</td><td>14.17 ms</td><td>147.0 ms</td><td>4866 MiB</td></tr>
+                  <tr><td>5</td><td>Evo-1</td><td>InternVL3</td><td>8</td><td>94.5%</td><td>63.60 ms</td><td>131.0 ms</td><td>1564 MiB</td></tr>
+                  <tr><td>6</td><td>SmolVLA</td><td>SmolVLM2</td><td>4</td><td>90.5%</td><td>28.16 ms</td><td>54.8 ms</td><td>1410 MiB</td></tr>
+                  <tr><td>7</td><td>pi0</td><td>PaliGemma</td><td>32</td><td>87.5%</td><td>9.74 ms</td><td>207.2 ms</td><td>5548 MiB</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">
+              This table has one SR column because the current paper reports the aggregate LIBERO-Object suite result:
+              10 tasks x 20 episodes = 200 episodes per architecture.
+            </p>
+          </div>
+
+          <div class="libero-video-block">
+            <div class="section-heading-row">
+              <div>
+                <h3>LIBERO Rollouts</h3>
+                <p>
+                  Example simulator rollouts produced by the vla.cpp runtime. These sit with the LIBERO leaderboard
+                  because they illustrate simulator behavior rather than real ALOHA-arm execution.
+                </p>
+              </div>
+            </div>
+            <div class="libero-video-grid">
+              <article class="libero-video-card">
+                <video controls preload="metadata">
+                  <source src="assets/libero-videos/episode-000003.mp4" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+                <div>
+                  <h4>LIBERO rollout</h4>
+                </div>
+              </article>
+              <article class="libero-video-card">
+                <video controls preload="metadata">
+                  <source src="assets/libero-videos/episode-000006.mp4" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+                <div>
+                  <h4>LIBERO rollout</h4>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="table-block">
+            <h3>Real ALOHA Arm Leaderboard</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Engine</th>
+                    <th>Policy</th>
+                    <th>Average SR</th>
+                    <th>task 1</th>
+                    <th>task 2</th>
+                    <th>Task time</th>
+                    <th>Inference/chunk</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="best-row"><td>1</td><td>vla.cpp</td><td>GR00T-N1.6 BF16</td><td>35/40 (87.5%)</td><td>18/20 (90%)</td><td>17/20 (85%)</td><td>49 s / 28 s</td><td>~470 ms</td></tr>
+                  <tr><td>2</td><td>pytorch baseline</td><td>GR00T-N1.6 BF16</td><td>16/40 (40.0%)</td><td>3/20 (15%)</td><td>13/20 (65%)</td><td>71 s / 30 s</td><td>~584-688 ms</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">
+              Pass rate is taken from the source worksheet; average time is calculated from successful executions only.
+              pytorch and vla.cpp each have 20 trials per task.
+            </p>
+          </div>
+
+          <section class="aloha-benchmark" id="aloha-evidence" aria-labelledby="aloha-title">
+            <div class="section-heading-row">
+              <div>
+                <h3 id="aloha-title">Real ALOHA Left Arm Benchmark</h3>
+                <p>
+                  GR00T N1.6 BF16 inference comparison on two physical manipulation tasks. The visualization separates
+                  success rate, successful-trial time, server latency, and uploaded trial evidence.
+                </p>
+              </div>
+            </div>
+
+            <div class="task-definition-grid" aria-label="ALOHA task definitions">
+              <article>
+                <figure class="setup-frame">
+                  <img src="assets/aloha-setup/task1.jpeg" alt="task 1 ALOHA setup with colored blocks and a white box on the table.">
+                </figure>
+                <span>task 1</span>
+                <p>pick up all blocks on the table and place them into the white box.</p>
+              </article>
+              <article>
+                <figure class="setup-frame">
+                  <img src="assets/aloha-setup/task2.jpeg" alt="task 2 ALOHA setup with trash, banana, box, and white dish on the table.">
+                </figure>
+                <span>task 2</span>
+                <p>pick up the trash and place it into the box, then pick up the banana and place it on the white dish.</p>
+              </article>
+            </div>
+
+            <div class="success-summary-grid" aria-label="average success rates">
+              <article>
+                <span>pytorch average success rate</span>
+                <strong>40.0%</strong>
+                <p>16/40 successful trials across task 1 and task 2.</p>
+              </article>
+              <article>
+                <span>vla.cpp average success rate</span>
+                <strong>87.5%</strong>
+                <p>35/40 successful trials across task 1 and task 2.</p>
+              </article>
+            </div>
+
+            <div class="aloha-highlight-grid">
+              <article class="aloha-highlight">
+                <span>best combined pass rate</span>
+                <strong>87.5%</strong>
+                <p>vla.cpp-BF16, 35/40 trials</p>
+              </article>
+              <article class="aloha-highlight">
+                <span>best task 1</span>
+                <strong>90%</strong>
+                <p>vla.cpp-BF16, 18/20 blocks-to-box trials</p>
+              </article>
+              <article class="aloha-highlight">
+                <span>best task 2</span>
+                <strong>85%</strong>
+                <p>vla.cpp-BF16, 17/20 trash-and-banana trials</p>
+              </article>
+              <article class="aloha-highlight">
+                <span>fastest task 2 avg.</span>
+                <strong>0m28s</strong>
+                <p>vla.cpp-BF16, successful trials only</p>
+              </article>
+            </div>
+
+            <div class="chart-grid">
+              <article class="chart-card">
+                <h4>pass rate by task</h4>
+                <div class="bar-group">
+                  <span class="bar-label">pytorch task 1</span>
+                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 15%;"></span></div>
+                  <strong>15%</strong>
+                </div>
+                <div class="bar-group">
+                  <span class="bar-label">pytorch task 2</span>
+                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 65%;"></span></div>
+                  <strong>65%</strong>
+                </div>
+                <div class="bar-group">
+                  <span class="bar-label">vla.cpp task 1</span>
+                  <div class="bar-track"><span class="bar-fill" style="--value: 90%;"></span></div>
+                  <strong>90%</strong>
+                </div>
+                <div class="bar-group">
+                  <span class="bar-label">vla.cpp task 2</span>
+                  <div class="bar-track"><span class="bar-fill" style="--value: 85%;"></span></div>
+                  <strong>85%</strong>
+                </div>
+              </article>
+              <article class="chart-card">
+                <h4>average successful time</h4>
+                <div class="bar-group">
+                  <span class="bar-label">pytorch task 1</span>
+                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 100%;"></span></div>
+                  <strong>1m11s</strong>
+                </div>
+                <div class="bar-group">
+                  <span class="bar-label">vla.cpp task 1</span>
+                  <div class="bar-track"><span class="bar-fill" style="--value: 69%;"></span></div>
+                  <strong>0m49s</strong>
+                </div>
+                <div class="bar-group">
+                  <span class="bar-label">pytorch task 2</span>
+                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 42%;"></span></div>
+                  <strong>0m30s</strong>
+                </div>
+                <div class="bar-group">
+                  <span class="bar-label">vla.cpp task 2</span>
+                  <div class="bar-track"><span class="bar-fill" style="--value: 39%;"></span></div>
+                  <strong>0m28s</strong>
+                </div>
+              </article>
+            </div>
+
+            <div class="latency-grid" aria-label="ALOHA latency snapshots">
+              <article>
+                <span>pytorch baseline</span>
+                <strong>584-688 ms</strong>
+              </article>
+              <article>
+                <span>vla.cpp-BF16</span>
+                <strong>451-507 ms</strong>
+              </article>
+            </div>
+
+            <div class="video-evidence-panel">
+              <div class="section-heading-row">
+                <div>
+                  <h3>ALOHA Video Evidence</h3>
+                  <p>
+                    Each page shows one trial: one setup image plus overview, wristleft, and high camera videos for
+                    pytorch and vla.cpp.
+                  </p>
+                </div>
+                <span id="evidence-count" class="evidence-count">0 trials</span>
+              </div>
+              <div class="evidence-filters" aria-label="Evidence filters">
+                <label>
+                  task
+                  <select id="filter-task">
+                    <option value="all">all tasks</option>
+                    <option value="Task 1">task 1</option>
+                    <option value="Task 2">task 2</option>
+                  </select>
+                </label>
+                <label>
+                  result
+                  <select id="filter-result">
+                    <option value="all">all results</option>
+                    <option value="PASS">pass</option>
+                    <option value="FAIL">fail</option>
+                  </select>
+                </label>
+                <label>
+                  setup
+                  <select id="filter-setup">
+                    <option value="all">all setups</option>
+                    <option value="Setup 1">setup 1</option>
+                    <option value="Setup 2">setup 2</option>
+                    <option value="Setup 3">setup 3</option>
+                    <option value="Setup 4">setup 4</option>
+                    <option value="Setup 5">setup 5</option>
+                  </select>
+                </label>
+              </div>
+              <div id="evidence-gallery" class="evidence-gallery" aria-live="polite"></div>
+              <div class="evidence-pagination" aria-label="Evidence pagination">
+                <button id="evidence-prev" class="pager-button" type="button">previous</button>
+                <span id="evidence-page" class="pager-status">page 1 of 1</span>
+                <button id="evidence-next" class="pager-button" type="button">next</button>
+              </div>
+            </div>
+          </section>
+
+          <div class="result-grid">
+            <article class="result-panel">
+              <h3>pytorch reference comparison</h3>
+              <p>
+                On SmolVLA BF16 over LIBERO-Object, <span class="mono">vla.cpp</span> reduces environment-observed step
+                latency from 223.96 ms to 28.16 ms while keeping peak VRAM essentially unchanged.
+              </p>
+              <dl class="mini-stats">
+                <div><dt>pytorch</dt><dd>223.96 ms, 1406 MiB</dd></div>
+                <div><dt>vla.cpp</dt><dd>28.16 ms, 1410 MiB</dd></div>
+              </dl>
+            </article>
+            <article class="result-panel">
+              <h3>IMMA Tensor-Core Kernel</h3>
+              <p>
+                Moving BitVLA ternary matrix multiplication from a DP4A path to IMMA tensor cores cuts per-step latency
+                by 4.6x on RTX 3060 and 4.0x on AGX Orin while preserving numerical output.
+              </p>
+              <dl class="mini-stats">
+                <div><dt>RTX 3060</dt><dd>172.8 ms to 37.85 ms</dd></div>
+                <div><dt>AGX Orin</dt><dd>406.6 ms to 101.11 ms</dd></div>
+              </dl>
+            </article>
+          </div>
+
+          <figure class="figure">
+            <img
+              src="assets/roofline.png"
+              alt="Roofline plots placing single-request VLA inference in the compute-bound region on RTX 3060 and Jetson AGX Orin."
+              width="2430"
+              height="1044"
+            >
+            <figcaption>
+              The roofline analysis places batch-1 VLA inference in the compute-bound regime, making utilization the
+              deployment lever for latency after footprint is controlled.
+            </figcaption>
+          </figure>
+
+          <div class="table-block">
+            <h3>Hardware Tiers</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>RTX 3060</th>
+                    <th>AGX Orin</th>
+                    <th>Orin Nano</th>
+                    <th>Nano RSS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>SmolVLA</td><td>28.16 ms</td><td>65.41 ms</td><td>141.81 ms</td><td>2031 MiB</td></tr>
+                  <tr><td>BitVLA</td><td>37.85 ms</td><td>101.11 ms</td><td>355.65 ms</td><td>2199 MiB</td></tr>
+                  <tr><td>Evo-1</td><td>63.60 ms</td><td>131.01 ms</td><td>458.84 ms</td><td>2135 MiB</td></tr>
+                  <tr><td>GR00T-N1.5</td><td>14.17 ms</td><td>28.78 ms</td><td>84.76 ms*</td><td>5975 MiB</td></tr>
+                  <tr><td>pi0</td><td>9.74 ms</td><td>27.90 ms</td><td>39.10 ms*</td><td>6068 MiB</td></tr>
+                  <tr><td>GR00T-N1.6</td><td>10.29 ms</td><td>26.70 ms</td><td>Does not fit</td><td>-</td></tr>
+                  <tr><td>GR00T-N1.7</td><td>10.26 ms</td><td>26.84 ms</td><td>Does not fit</td><td>-</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">* Run split with simulator offloaded to another machine.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="section" id="memory">
+        <div class="container">
+          <h2>Memory Efficiency</h2>
+          <p class="section-intro">
+            The smallest robot target is an 8 GB Jetson Orin Nano, where the model must share unified memory with the
+            OS, camera stack, simulator or robot client, and the rest of the autonomy pipeline.
+          </p>
+          <div class="memory-grid">
+            <article class="memory-card">
+              <span class="card-kicker">BitVLA bundle</span>
+              <strong>1.34 GiB</strong>
+              <p>
+                Packed ternary weights reduce the on-disk model from 5.6 GiB while keeping the same numerical values at
+                inference.
+              </p>
+            </article>
+            <article class="memory-card">
+              <span class="card-kicker">Load high-water mark</span>
+              <strong>1.15 GiB</strong>
+              <p>
+                The packed layout drops load-time memory pressure enough for BitVLA to run on the Nano-class target.
+              </p>
+            </article>
+            <article class="memory-card">
+              <span class="card-kicker">Nano coverage</span>
+              <strong>5 / 7</strong>
+              <p>
+                Five architectures fit the 8 GB tier; the largest GR00T variants still exceed the shared-memory budget.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section tinted" id="comparison">
+        <div class="container">
+          <h2>Comparison</h2>
+          <p class="section-intro">
+            The project targets runtime portability and utilization. Quantization, vendor compilers, and Python reference
+            servers solve adjacent parts of the deployment problem.
+          </p>
+          <div class="comparison-grid">
+            <article>
+              <h3>Python reference servers</h3>
+              <p>
+                Reference stacks preserve research flexibility, but eager pytorch dispatch leaves batch-1 VLA inference
+                launch-bound. On SmolVLA, <span class="mono">vla.cpp</span> reduces step latency from 223.96 ms to
+                28.16 ms on the same RTX 3060 setup.
+              </p>
+            </article>
+            <article>
+              <h3>Quantization-only deployment</h3>
+              <p>
+                Weight packing controls footprint, but single-request VLA inference remains compute-bound. The BitVLA
+                speedup comes from moving the same ternary math onto IMMA tensor cores, not from changing the packed
+                format alone.
+              </p>
+            </article>
+            <article>
+              <h3>Single-target compilers</h3>
+              <p>
+                Vendor compilers can be strong for one model on one device generation. <span class="mono">vla.cpp</span>
+                instead emphasizes one bundle protocol and one serving path across several VLA architectures and hardware
+                tiers.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="citation">
+        <div class="container narrow">
+          <h2>Citation</h2>
+          <p>
+            Citation details are provisional until the final paper metadata and public artifact URLs are released.
+          </p>
+          <div class="citation-box">
+            <button class="copy-button" type="button" data-copy-target="bibtex-code">Copy</button>
+            <pre class="bibtex"><code id="bibtex-code">@misc{vlacpp2026,
+  title  = {vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models},
+  author = {Nguyen, Khanh D. and Ho, Hung T. and Nguyen, Chinh T. and Duong, Thanh Q. and Le, Linh D. and Ngo, Vien A. and Le, An T.},
+  year   = {2026},
+  note   = {CoRL 2026 submission}
+}</code></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <span>vla.cpp project page</span>
+        <a href="#top">Back to top</a>
+      </div>
+    </footer>
+    <div id="evidence-modal" class="evidence-modal" hidden>
+      <div class="evidence-modal-backdrop" data-close-modal></div>
+      <div class="evidence-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button class="modal-close" type="button" data-close-modal aria-label="Close video evidence">Close</button>
+        <div id="modal-media" class="modal-media"></div>
+        <div class="modal-copy">
+          <h3 id="modal-title">Trial evidence</h3>
+          <p id="modal-meta"></p>
+        </div>
+      </div>
+    </div>
+    <script src="data/aloha-evidence.js"></script>
+    <script src="aloha-gallery.js"></script>
+    <script src="page-animation.js"></script>
+    <script>
+      document.querySelectorAll("[data-copy-target]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const target = document.getElementById(button.dataset.copyTarget);
+          if (!target) return;
+
+          try {
+            await navigator.clipboard.writeText(target.innerText.trim());
+            button.textContent = "Copied";
+            window.setTimeout(() => {
+              button.textContent = "Copy";
+            }, 1600);
+          } catch {
+            button.textContent = "Select text";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

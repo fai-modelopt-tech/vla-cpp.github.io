@@ -63,15 +63,21 @@
   };
 
   const taskSlug = (task) => (task === "Task 1" ? "task1" : "task2");
-  const setupImage = (task) => `assets/aloha-setup/${taskSlug(task)}-evidence.jpeg`;
+  const setupImage = (task, setupIndex = 1) => {
+    const taskIndex = String(task).toLowerCase().replace("task ", "");
+    return `assets/aloha-setup/task_${taskIndex}_${setupIndex}.jpeg`;
+  };
 
   const trialVideoPath = (item, view, ext = "mp4") => {
+    const base = ext === "jpg" ? item?.overviewPoster : item?.overviewVideo;
     const replacement = `-${view.suffix}.${ext}`;
-    return String(item?.video ?? "")
-      .replace(/-iphone\.mp4$/, replacement)
+    return String(base ?? "")
       .replace(/-overview\.mp4$/, replacement)
+      .replace(/-overview\.jpg$/, replacement)
       .replace(/-wristleft\.mp4$/, replacement)
-      .replace(/-high\.mp4$/, replacement);
+      .replace(/-wristleft\.jpg$/, replacement)
+      .replace(/-high\.mp4$/, replacement)
+      .replace(/-high\.jpg$/, replacement);
   };
 
   const groupEvidence = () => {
@@ -182,7 +188,7 @@
         </div>
         <figure class="trial-setup-card">
           <span class="trial-setup-frame ${escapeHtml(taskSlug(group.task))}">
-            <img src="${escapeHtml(setupImage(group.task))}" alt="${escapeHtml(title)} setup image.">
+            <img src="${escapeHtml(setupImage(group.task, group.items[0]?.setupIndex ?? 1))}" alt="${escapeHtml(title)} setup image.">
           </span>
         </figure>
         <div class="trial-video-grid" aria-label="${escapeHtml(title)} video comparison">

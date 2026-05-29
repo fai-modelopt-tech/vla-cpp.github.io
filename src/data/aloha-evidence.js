@@ -12,9 +12,10 @@
 
   const CAMERA = "iPhone Overview";
 
-  const trial = (id, setup, result, time = "", note = "") => ({
+  const trial = (id, setupIndex, result, time = "", note = "") => ({
     id,
-    setup: `Setup ${setup}`,
+    setupIndex,
+    setup: `Setup ${setupIndex}`,
     result,
     time,
     note,
@@ -134,18 +135,21 @@
   window.ALOHA_EVIDENCE = DATA.flatMap((group) =>
     group.rows.map((row) => {
       const trialId = String(row.id).padStart(2, "0");
-      const base = `assets/aloha-videos/${group.variant.dir}/${group.slug}/trial-${trialId}-iphone`;
+      const overviewBase = `assets/aloha-videos/${group.variant.dir}/${group.slug}/trial-${trialId}-overview`;
       return {
         variant: group.variant.label,
         task: group.task,
         trial: row.id,
+        setupIndex: row.setupIndex,
         setup: row.setup,
         result: row.result,
         time: row.time,
         note: row.note,
         camera: CAMERA,
-        video: `${base}.mp4`,
-        poster: `${base}.jpg`,
+        overviewVideo: `${overviewBase}.mp4`,
+        overviewPoster: `${overviewBase}.jpg`,
+        video: `${overviewBase}.mp4`,
+        poster: `${overviewBase}.jpg`,
       };
     }),
   );

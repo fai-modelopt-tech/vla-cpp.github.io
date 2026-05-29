@@ -37,15 +37,10 @@
     "Task 2": 1,
   };
 
-  const variantLabels = {
-    "Baseline-Pytorch-BF16": "pytorch",
-    "vla.cpp-BF16": "vla.cpp",
-  };
-
   const cameraViews = [
-    { label: "overview", suffix: "overview" },
-    { label: "wristleft", suffix: "wristleft" },
-    { label: "high", suffix: "high" },
+    { label: "camera overview", suffix: "overview" },
+    { label: "camera wrist left", suffix: "wristleft" },
+    { label: "camera high", suffix: "high" },
   ];
 
   const compareEvidence = (a, b) =>
@@ -64,20 +59,62 @@
 
   const taskSlug = (task) => (task === "Task 1" ? "task1" : "task2");
   const setupImage = (task, setupIndex = 1) => {
-    const taskIndex = String(task).toLowerCase().replace("task ", "");
-    return `assets/aloha-setup/task_${taskIndex}_${setupIndex}.jpeg`;
+    const slug = taskSlug(task);
+    return `assets/aloha-videos/pytorch/${slug}/setup_${setupIndex}/${slug}_${setupIndex}.jpeg`;
   };
 
-  const trialVideoPath = (item, view, ext = "mp4") => {
-    const base = ext === "jpg" ? item?.overviewPoster : item?.overviewVideo;
-    const replacement = `-${view.suffix}.${ext}`;
-    return String(base ?? "")
-      .replace(/-overview\.mp4$/, replacement)
-      .replace(/-overview\.jpg$/, replacement)
-      .replace(/-wristleft\.mp4$/, replacement)
-      .replace(/-wristleft\.jpg$/, replacement)
-      .replace(/-high\.mp4$/, replacement)
-      .replace(/-high\.jpg$/, replacement);
+  const trialVideoFilename = (view) => {
+    if (view.suffix === "overview") return "camera_overview.mp4";
+    return view.suffix === "wristleft"
+      ? "camera_wrist_left_camera_color_image_raw_compressed.mp4"
+      : "camera_high_camera_color_image_raw_compressed.mp4";
+  };
+
+  const videoMimeType = (path) => (String(path).toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4");
+
+  const unreadableVideoPaths = new Set([
+    "assets/aloha-videos/pytorch/task1/setup_1/trial_4/camera_wrist_left_camera_color_image_raw_compressed.mp4",
+    "assets/aloha-videos/pytorch/task1/setup_2/trail_3/camera_wrist_left_camera_color_image_raw_compressed.mp4",
+    "assets/aloha-videos/pytorch/task1/setup_3/trail_2/camera_wrist_left_camera_color_image_raw_compressed.mp4",
+    "assets/aloha-videos/pytorch/task1/setup_3/trail_3/camera_high_camera_color_image_raw_compressed.mp4",
+    "assets/aloha-videos/pytorch/task1/setup_3/trail_3/camera_wrist_left_camera_color_image_raw_compressed.mp4",
+    "assets/aloha-videos/pytorch/task1/setup_4/trail_1/camera_wrist_left_camera_color_image_raw_compressed.mp4",
+    "assets/aloha-videos/pytorch/task1/setup_4/trail_2/camera_wrist_left_camera_color_image_raw_compressed.mp4",
+  ]);
+
+  const trialDirectory = (item) => {
+    if (!item) return "";
+    const base = `assets/aloha-videos/${item.variantDir}/${item.taskSlug}/setup_${item.setupIndex}`;
+    const trialIndex = item.setupTrialIndex ?? 1;
+
+    if (item.variantDir === "pytorch" && item.taskSlug === "task1") {
+      if (item.setupIndex === 1 || item.setupIndex === 5) return `${base}/trial_${trialIndex}`;
+      if (item.setupIndex === 3 && trialIndex === 4) return `${base}/trail_4/aloha_vla_cpp_27062026_014`;
+      return `${base}/trail_${trialIndex}`;
+    }
+
+    if (item.variantDir === "pytorch" && item.taskSlug === "task2" && item.setupIndex <= 4) {
+      return `${base}/trial_${trialIndex}`;
+    }
+
+    if (item.variantDir === "vlacpp" && item.taskSlug === "task1" && item.setupIndex <= 4) {
+      return `${base}/trial_${trialIndex}`;
+    }
+
+    if (item.variantDir === "vlacpp" && item.taskSlug === "task2" && item.setupIndex === 5 && trialIndex === 4) {
+      return `${base}/trial_${trialIndex}`;
+    }
+
+    return "";
+  };
+
+  const trialVideoPath = (item, view) => {
+    if (!item) return "";
+    const directory = trialDirectory(item);
+    if (!directory) return "";
+    const filename = trialVideoFilename(view);
+    const path = `${directory}/${filename}`;
+    return unreadableVideoPaths.has(path) ? "" : path;
   };
 
   const groupEvidence = () => {
@@ -104,7 +141,7 @@
     return Array.from(groups.values())
       .filter((group) => {
         if (!selected("result")) return true;
-        return group.items.some((item) => item.result === selected("result"));
+        return group.items.every((item) => item.result === selected("result"));
       })
       .sort(
         (a, b) =>
@@ -115,21 +152,30 @@
 
   const videoCell = (item, view) => {
     if (!item) {
-      return '<article class="trial-video-card trial-video-card-empty"><div class="trial-video-pending">missing trial</div></article>';
+      return '<article class="trial-video-card trial-video-card-empty"><div class="trial-video-pending">coming soon</div></article>';
     }
 
     const path = trialVideoPath(item, view);
-    const label = `${variantLabels[item.variant] ?? item.variant} · ${view.label}`;
     const resultClass = item.result === "PASS" ? "pass" : "fail";
+
+    if (!path) {
+      return `
+        <article class="trial-video-card">
+          <div class="trial-video-pending">coming soon</div>
+          <div class="trial-video-caption">
+            <em class="${resultClass}">${escapeHtml(String(item.result).toLowerCase())}</em>
+          </div>
+        </article>
+      `;
+    }
 
     return `
       <article class="trial-video-card">
         <video controls preload="metadata" data-pending-path="${escapeHtml(path)}">
-          <source src="${escapeHtml(path)}" type="video/mp4">
+          <source src="${escapeHtml(path)}" type="${escapeHtml(videoMimeType(path))}">
           your browser does not support the video tag.
         </video>
         <div class="trial-video-caption">
-          <span>${escapeHtml(label)}</span>
           <em class="${resultClass}">${escapeHtml(String(item.result).toLowerCase())}</em>
         </div>
       </article>
@@ -146,16 +192,17 @@
         const caption = card.querySelector(".trial-video-caption");
         card.innerHTML = `
           <div class="trial-video-pending">
-            <span>pending</span>
+            <span>coming soon</span>
           </div>
           ${caption ? caption.outerHTML : ""}
         `;
         card.dataset.path = path;
       };
 
-      video.addEventListener("error", fallback, { once: true });
-      const source = video.querySelector("source");
-      if (source) source.addEventListener("error", fallback, { once: true });
+      video.addEventListener("error", fallback);
+      video.querySelectorAll("source").forEach((source) => {
+        source.addEventListener("error", fallback);
+      });
     });
   };
 
@@ -215,7 +262,7 @@
     modalMedia.innerHTML = `
       <div class="modal-pending">
         <div>
-          <strong>evidence pending</strong>
+          <strong>coming soon</strong>
           <p>upload the video to <span class="mono">${escapeHtml(item.video)}</span> and reopen this card.</p>
         </div>
       </div>

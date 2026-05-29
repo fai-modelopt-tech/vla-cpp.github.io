@@ -134,22 +134,23 @@
 
   window.ALOHA_EVIDENCE = DATA.flatMap((group) =>
     group.rows.map((row) => {
-      const trialId = String(row.id).padStart(2, "0");
-      const overviewBase = `assets/aloha-videos/${group.variant.dir}/${group.slug}/trial-${trialId}-overview`;
       return {
         variant: group.variant.label,
+        variantDir: group.variant.dir,
         task: group.task,
+        taskSlug: group.slug,
         trial: row.id,
         setupIndex: row.setupIndex,
+        setupTrialIndex: ((row.id - 1) % 4) + 1,
         setup: row.setup,
         result: row.result,
         time: row.time,
         note: row.note,
         camera: CAMERA,
-        overviewVideo: `${overviewBase}.mp4`,
-        overviewPoster: `${overviewBase}.jpg`,
-        video: `${overviewBase}.mp4`,
-        poster: `${overviewBase}.jpg`,
+        overviewVideo: "",
+        overviewPoster: "",
+        video: "",
+        poster: "",
       };
     }),
   );

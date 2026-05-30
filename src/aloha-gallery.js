@@ -59,8 +59,8 @@
 
   const taskSlug = (task) => (task === "Task 1" ? "task1" : "task2");
   const setupImage = (task, setupIndex = 1) => {
-    const slug = taskSlug(task);
-    return `assets/aloha-videos/pytorch/${slug}/setup_${setupIndex}/${slug}_${setupIndex}.jpeg`;
+    const taskIndex = task === "Task 1" ? 1 : 2;
+    return `assets/aloha-setup/task${taskIndex}_${setupIndex}.jpeg`;
   };
 
   const trialVideoFilename = (view) => {
@@ -72,40 +72,12 @@
 
   const videoMimeType = (path) => (String(path).toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4");
 
-  const unreadableVideoPaths = new Set([
-    "assets/aloha-videos/pytorch/task1/setup_1/trial_4/camera_wrist_left_camera_color_image_raw_compressed.mp4",
-    "assets/aloha-videos/pytorch/task1/setup_2/trail_3/camera_wrist_left_camera_color_image_raw_compressed.mp4",
-    "assets/aloha-videos/pytorch/task1/setup_3/trail_2/camera_wrist_left_camera_color_image_raw_compressed.mp4",
-    "assets/aloha-videos/pytorch/task1/setup_3/trail_3/camera_high_camera_color_image_raw_compressed.mp4",
-    "assets/aloha-videos/pytorch/task1/setup_3/trail_3/camera_wrist_left_camera_color_image_raw_compressed.mp4",
-    "assets/aloha-videos/pytorch/task1/setup_4/trail_1/camera_wrist_left_camera_color_image_raw_compressed.mp4",
-    "assets/aloha-videos/pytorch/task1/setup_4/trail_2/camera_wrist_left_camera_color_image_raw_compressed.mp4",
-  ]);
-
   const trialDirectory = (item) => {
     if (!item) return "";
     const base = `assets/aloha-videos/${item.variantDir}/${item.taskSlug}/setup_${item.setupIndex}`;
     const trialIndex = item.setupTrialIndex ?? 1;
 
-    if (item.variantDir === "pytorch" && item.taskSlug === "task1") {
-      if (item.setupIndex === 1 || item.setupIndex === 5) return `${base}/trial_${trialIndex}`;
-      if (item.setupIndex === 3 && trialIndex === 4) return `${base}/trail_4/aloha_vla_cpp_27062026_014`;
-      return `${base}/trail_${trialIndex}`;
-    }
-
-    if (item.variantDir === "pytorch" && item.taskSlug === "task2" && item.setupIndex <= 4) {
-      return `${base}/trial_${trialIndex}`;
-    }
-
-    if (item.variantDir === "vlacpp" && item.taskSlug === "task1" && item.setupIndex <= 4) {
-      return `${base}/trial_${trialIndex}`;
-    }
-
-    if (item.variantDir === "vlacpp" && item.taskSlug === "task2" && item.setupIndex === 5 && trialIndex === 4) {
-      return `${base}/trial_${trialIndex}`;
-    }
-
-    return "";
+    return `${base}/trial_${trialIndex}`;
   };
 
   const trialVideoPath = (item, view) => {
@@ -113,8 +85,7 @@
     const directory = trialDirectory(item);
     if (!directory) return "";
     const filename = trialVideoFilename(view);
-    const path = `${directory}/${filename}`;
-    return unreadableVideoPaths.has(path) ? "" : path;
+    return `${directory}/${filename}`;
   };
 
   const groupEvidence = () => {

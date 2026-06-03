@@ -682,11 +682,13 @@ td:first-child {
   box-shadow: var(--shadow);
 }
 
-.libero-video-card video {
+.libero-video-card video,
+.libero-video-card img {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #10201b;
+  object-fit: contain;
 }
 
 .libero-video-card div {

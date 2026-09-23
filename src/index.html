@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="vla.cpp is a portable C++ inference runtime for vision-language-action models, built on llama.cpp."
+      content="vla.cpp is a unified C++ inference runtime for eleven vision-language-action models across CUDA, Metal, CPU, SYCL, and OpenVINO, built on llama.cpp."
     >
     <title>vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models</title>
     <link rel="stylesheet" href="styles.css">
@@ -25,7 +25,9 @@
           <a href="#contributions">Contributions</a>
           <a href="#method">Method</a>
           <a href="#results">Leaderboard</a>
+          <a href="#latency">Latency</a>
           <a href="#memory">Memory</a>
+          <a href="#robots">Robots</a>
           <a href="#comparison">Comparison</a>
           <a href="#citation">BibTeX</a>
         </div>
@@ -40,8 +42,9 @@
             <span class="hero-title-line">Vision-Language-Action Models</span>
           </h1>
           <p class="lead">
-            A portable C++ runtime built on <span class="mono">llama.cpp</span> for serving flow-matching and diffusion
-            VLA policies from compact model bundles across workstation and embedded robot hardware.
+            A unified C++ runtime built on <span class="mono">ggml</span> and <span class="mono">llama.cpp</span> that
+            serves eleven VLA policies, iterative and regression heads alike, from self-contained GGUF bundles on CUDA,
+            Metal, CPU, SYCL, and OpenVINO, from desktop GPUs down to an 8 GB Jetson Orin Nano.
           </p>
           <p class="authors">
             Anonymous Authors
@@ -85,16 +88,16 @@
             <p class="release-note">Code, converters, model bundles, appendix, and benchmark scaffolds are available from these release links.</p>
             <div class="claim-strip" aria-label="Core contributions">
               <article>
-                <strong>ggml-class VLA runtime</strong>
-                <span>To our knowledge, the first native flow-matching and diffusion action-head server on llama.cpp.</span>
+                <strong>One runtime, eleven models</strong>
+                <span>Shared loading, tensor execution, and serving; model-specific attention, conditioning, and action heads.</span>
               </article>
               <article>
-                <strong>One binary, seven architectures</strong>
-                <span>Shared request/response protocol and bundle format across VLA families.</span>
+                <strong>Five backends</strong>
+                <span>CUDA, Metal, CPU, SYCL, and OpenVINO behind one tensor interface and one request/response protocol.</span>
               </article>
               <article>
-                <strong>Edge deployment focus</strong>
-                <span>Measured from RTX 3060 down to Jetson modules with an 8 GB unified-memory floor.</span>
+                <strong>Simulation to real robots</strong>
+                <span>LIBERO and SimplerEnv evaluation, Jetson Orin Nano deployment, and UR10e and ALOHA arms.</span>
               </article>
             </div>
           </div>
@@ -122,26 +125,31 @@
         <div class="container narrow">
           <h2>Abstract</h2>
           <p>
-            Vision-language-action policies are typically shipped as Python/PyTorch stacks that assume a
-            workstation-class GPU, which mismatches the embedded hardware robots actually carry.
-            <span class="mono">vla.cpp</span> is a portable C++ inference runtime that serves the VLA pattern in which a
-            cached vision-language prefix is consumed by a cross-attending action expert over several solver steps.
+            Deploying vision-language-action (VLA) models on robots requires adapting model-specific inference
+            pipelines to heterogeneous processors and limited onboard memory. We present <span class="mono">vla.cpp</span>,
+            a unified C++ inference runtime for eleven VLA models. The runtime shares model loading, tensor execution,
+            and serving while retaining architecture-specific attention, conditioning, and action heads. Iterative
+            policies reuse observation-dependent computation across solver steps; regression policies use a direct
+            prediction path.
           </p>
           <p>
-            One runtime serves seven architectures spanning six backbone families and five action-head implementations behind
-            one request/response protocol. On LIBERO-Object, the engine matches reference behavior within one episode out
-            of 200, runs BitVLA at 100% success in 1.3 GiB of memory, and carries the same bundle from an RTX 3060 down
-            to an 8 GB embedded module. A cross-hardware roofline analysis shows that batch-1 VLA inference is
-            compute-bound; an IMMA ladder GEMM derived from that analysis cuts BitVLA per-step latency by 4.5x.
+            We evaluate task success on LIBERO-Object and profile supported configurations on NVIDIA, Apple, and Intel
+            hardware. BitVLA completes 200/200 LIBERO-Object episodes on an 8 GB Jetson Orin Nano; a separate desktop
+            measurement records 1.3 GiB of device memory. A ternary tensor-core kernel accelerates its client inference
+            by 4.0-4.6x over the CUDA-core baseline on RTX 3060 and AGX Orin. A SmolVLA case study identifies a
+            positional-index precision mismatch that changes gripper commands and task success, motivating fixed-input
+            numerical checks alongside rollout evaluation. Physical deployments on UR10e and ALOHA demonstrate robot
+            integration, while separate delay and execution-horizon studies characterize synchronous action replay.
           </p>
           <div class="keyword-list" aria-label="Keywords">
             <span>VLA inference</span>
-            <span>llama.cpp</span>
+            <span>llama.cpp / ggml</span>
             <span>GGUF bundles</span>
-            <span>LIBERO-Object</span>
-            <span>ALOHA arm</span>
-            <span>edge deployment</span>
-            <span>roofline analysis</span>
+            <span>CUDA / Metal / SYCL / OpenVINO</span>
+            <span>LIBERO</span>
+            <span>UR10e and ALOHA</span>
+            <span>Jetson deployment</span>
+            <span>numerical validation</span>
           </div>
         </div>
       </section>
@@ -152,11 +160,15 @@
           <figure class="figure">
             <img
               src="assets/vla-cpp-diagram-rendered.png"
-              alt="vla.cpp runtime architecture showing client observations, a stateless server, a GGUF bundle, and action chunks."
-              width="821"
-              height="259"
+              alt="vla.cpp architecture: a Python client sends observations over Protobuf and ZeroMQ to the C++ runtime, which loads GGUF weights and returns action chunks through llama.cpp's ggml hardware backends."
+              width="1645"
+              height="498"
             >
-            <figcaption>Unified C++ serving path for flow-matching and diffusion VLA action heads.</figcaption>
+            <figcaption>
+              The C++ server loads GGUF weights and returns action chunks; the client owns sensing and control. Model
+              adapters select model-specific computation. CUDA and CPU illustrate the backend layer; Metal, SYCL, and
+              OpenVINO use the same runtime interface.
+            </figcaption>
           </figure>
         </div>
       </section>
@@ -166,28 +178,28 @@
           <h2 id="highlights-title">Highlights</h2>
           <div class="metric-grid">
             <article class="metric">
-              <strong>7</strong>
-              <span>VLA architectures</span>
-            </article>
-            <article class="metric">
-              <strong>6</strong>
-              <span>backbone families</span>
+              <strong>11</strong>
+              <span>VLA models in one runtime</span>
             </article>
             <article class="metric">
               <strong>5</strong>
-              <span>action-head implementations</span>
+              <span>backends: CUDA, Metal, CPU, SYCL, OpenVINO</span>
             </article>
             <article class="metric">
-              <strong>1.3 GiB</strong>
-              <span>BitVLA runtime footprint</span>
+              <strong>10 / 11</strong>
+              <span>models within 3.2 pp of reference success</span>
             </article>
             <article class="metric">
-              <strong>7.95x</strong>
-              <span>SmolVLA step-latency speedup</span>
+              <strong>200 / 200</strong>
+              <span>BitVLA episodes on 8 GB Orin Nano</span>
             </article>
             <article class="metric">
-              <strong>87.5%</strong>
-              <span>ALOHA closed-loop success</span>
+              <strong>4.0-4.6x</strong>
+              <span>ternary tensor-core speedup</span>
+            </article>
+            <article class="metric">
+              <strong>2</strong>
+              <span>physical robots: UR10e and ALOHA</span>
             </article>
           </div>
         </div>
@@ -199,41 +211,41 @@
           <div class="contribution-grid">
             <article>
               <span>01</span>
-              <h3>Unified native runtime</h3>
+              <h3>Unified runtime</h3>
               <p>
-                A llama.cpp-based C++ server loads one self-contained bundle format and serves flow-matching or diffusion
-                VLA action heads through a shared request/response path.
+                Shared execution infrastructure across eleven VLA models, flow-matching, diffusion-style, and direct
+                regression heads, while preserving each model's attention patterns and action generation.
               </p>
               <div class="contribution-tags">
-                <em>GGUF metadata</em>
-                <em>ZeroMQ serving</em>
-                <em>Protobuf actions</em>
+                <em>11 model adapters</em>
+                <em>GGUF bundles</em>
+                <em>ZeroMQ + Protobuf</em>
               </div>
             </article>
             <article>
               <span>02</span>
-              <h3>Deployment-scale benchmarking</h3>
+              <h3>Numerical validation</h3>
               <p>
-                LIBERO-Object, memory-tier, latency, and roofline measurements show how the same runtime behaves from
-                RTX 3060 workstations down to Jetson-class robot hardware.
+                A fixed-input prediction check compares runtime actions with reference actions. A SmolVLA case study
+                links positional-index precision to flipped gripper commands and task success.
               </p>
               <div class="contribution-tags">
-                <em>7 architectures</em>
-                <em>6 backbones</em>
-                <em>5 action-head implementations</em>
+                <em>fixed-input checks</em>
+                <em>tensor dumps</em>
+                <em>2/10 to 9/10 fix</em>
               </div>
             </article>
             <article>
               <span>03</span>
-              <h3>Real-arm evidence path</h3>
+              <h3>Systems evaluation</h3>
               <p>
-                The ALOHA section pairs pytorch and vla.cpp trials by task and trial number, with setup photos, aggregate
-                success rates, latency snapshots, and upload slots for the full evidence set.
+                Evaluation across processors and two robot platforms, covering memory-constrained Jetson deployment,
+                ternary tensor-core acceleration, quantization, solver steps, and chunked control.
               </p>
               <div class="contribution-tags">
-                <em>40 trials per engine</em>
-                <em>task-level SR</em>
-                <em>paired videos</em>
+                <em>NVIDIA / Apple / Intel</em>
+                <em>UR10e + ALOHA</em>
+                <em>execution horizon</em>
               </div>
             </article>
           </div>
@@ -244,30 +256,48 @@
         <div class="container">
           <h2>Method</h2>
           <p class="section-intro">
-            <span class="mono">vla.cpp</span> runs as a stateless C++ server paired with a lightweight client. The server
-            loads a self-contained GGUF bundle once, decodes observations from a Protobuf request, runs VLA inference,
-            denormalizes actions, and returns an action chunk over ZeroMQ.
+            <span class="mono">vla.cpp</span> separates model adapters, tensor-execution backends, and robot clients.
+            Adapters define policy-specific graphs, backends execute their operators, and clients handle tokenization,
+            sensing, command mapping, and action replay. Model execution runs in C++ without PyTorch.
           </p>
           <div class="feature-list">
             <article>
-              <h3>Unified control flow</h3>
+              <h3>Iterative and regression heads</h3>
               <p>
-                Flow-matching and diffusion action heads map onto one VLA inference path instead of separate per-model
-                serving stacks.
+                Iterative policies (SmolVLA, &pi;0, &pi;0.5, Evo-1, GR00T N1.5/N1.6/N1.7, VLA-JEPA) refine a noise
+                sample over T solver steps, following each checkpoint's schedule. BitVLA, OpenVLA-OFT, and VLA-Adapter
+                regress the chunk directly. Both paths return an action chunk through one interface.
               </p>
             </article>
             <article>
-              <h3>Reusable prefix cache</h3>
+              <h3>Observation reuse</h3>
               <p>
-                The vision-language prefix is encoded once per observation and reused by cross-attention across solver
-                steps.
+                Prefix computation is independent of the changing action tokens, so its features and key/value
+                projections are cached once per observation and reused across solver steps. Model latency is
+                approximately P + T&middot;E. Graphs and buffers persist across requests of the same shape.
               </p>
             </article>
             <article>
-              <h3>Bundle-local metadata</h3>
+              <h3>Self-contained bundles</h3>
               <p>
-                Model weights, architecture configuration, and action/state normalization statistics travel with the
-                runtime artifact.
+                GGUF stores weights, architecture metadata, and normalization statistics. A new policy adds an adapter,
+                a converter, and a runtime registration. Backend coverage depends on operator support and precision.
+              </p>
+            </article>
+            <article>
+              <h3>Ternary tensor-core kernel</h3>
+              <p>
+                BitVLA's ternary weights are packed four 2-bit codes per byte, and activations are quantized row-wise
+                to int8. The multi-row path uses IMMA tensor-core instructions in place of the <span class="mono">dp4a</span>
+                CUDA-core baseline.
+              </p>
+            </article>
+            <article>
+              <h3>Numerical validation</h3>
+              <p>
+                The prediction check fixes weights, images, tokens, state, noise, masks, and schedules, then reports the
+                maximum absolute and relative RMS error against reference actions. Intermediate tensor dumps localize
+                any discrepancy.
               </p>
             </article>
           </div>
@@ -278,50 +308,76 @@
         <div class="container">
           <h2>Leaderboard</h2>
           <p class="section-intro">
-            The main success leaderboards are split by benchmark: LIBERO-Object simulation reports one aggregate success
-            rate over 200 episodes per model, while the real ALOHA arm reports task-level and overall success over the
-            available trial set for each engine. Latency, roofline, memory, and video evidence are supporting deployment
-            measurements.
+            All eleven supported models are evaluated on LIBERO-Object with 100 episodes per model, and profiled on
+            CUDA, Metal, and OpenVINO. Ten of the eleven reach success rates within 3.2 percentage points of their
+            reference. GR00T-N1.6 reaches 88% against 99% for its PyTorch reference, and the cause of this gap is still
+            unresolved. Incomplete episodes count as failures.
           </p>
-          <div class="result-tabs" aria-label="Result categories">
-            <span>LIBERO-Object leaderboard</span>
-            <span>Real ALOHA leaderboard</span>
-            <span>ALOHA video evidence</span>
-            <span>Latency and roofline</span>
-            <span>Memory tiers</span>
-          </div>
-
           <div class="table-block">
-            <h3>LIBERO-Object Simulator Leaderboard</h3>
+            <h3>LIBERO-Object: Eleven-Model Evaluation and Platform Profiles</h3>
             <div class="table-wrap">
               <table>
                 <thead>
-                  <tr>
-                    <th>Rank</th>
-                    <th>Model</th>
-                    <th>Backbone</th>
-                    <th>Chunk</th>
-                    <th>SR (200 eps)</th>
-                    <th>Step</th>
-                    <th>Inference</th>
-                    <th>VRAM</th>
-                  </tr>
+                  <tr><th>Model</th><th>Input / S</th><th>Success [95% CI]</th><th>Ref.</th><th>CUDA P90 / vision</th><th>CUDA GPU / host</th><th>Metal P90 / vision</th><th>Metal RSS</th><th>OV P90 / vision</th><th>OV RSS</th></tr>
                 </thead>
                 <tbody>
-                  <tr class="best-row"><td>1</td><td>BitVLA</td><td>BitNet-SigLIP</td><td>8</td><td>100.0%</td><td>37.85 ms</td><td>235.9 ms</td><td>1312 MiB</td></tr>
-                  <tr><td>2</td><td>GR00T-N1.7</td><td>Cosmos</td><td>16</td><td>98.0%</td><td>10.26 ms</td><td>84.1 ms</td><td>6302 MiB</td></tr>
-                  <tr><td>3</td><td>GR00T-N1.6</td><td>Eagle</td><td>16</td><td>86.5%</td><td>10.29 ms</td><td>83.6 ms</td><td>6048 MiB</td></tr>
-                  <tr><td>4</td><td>GR00T-N1.5</td><td>Eagle</td><td>16</td><td>96.0%</td><td>14.17 ms</td><td>147.0 ms</td><td>4866 MiB</td></tr>
-                  <tr><td>5</td><td>Evo-1</td><td>InternVL3</td><td>8</td><td>94.5%</td><td>63.60 ms</td><td>131.0 ms</td><td>1564 MiB</td></tr>
-                  <tr><td>6</td><td>SmolVLA</td><td>SmolVLM2</td><td>4</td><td>90.5%</td><td>28.16 ms</td><td>54.8 ms</td><td>1410 MiB</td></tr>
-                  <tr><td>7</td><td>pi0</td><td>PaliGemma</td><td>32</td><td>87.5%</td><td>9.74 ms</td><td>207.2 ms</td><td>5548 MiB</td></tr>
+                  <tr class="best-row"><td>VLA-JEPA</td><td>224/7</td><td>100 [96.3, 100]</td><td>99.6</td><td>64.2/22.3</td><td>3986/627</td><td>258.2/87.3</td><td>4034</td><td>151.2/55.3</td><td>3690</td></tr>
+                  <tr class="best-row"><td>BitVLA</td><td>224/8</td><td>100 [96.3, 100]</td><td>99.6</td><td>62.0/12.0</td><td>1312/1072</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                  <tr><td>GR00T-N1.7</td><td>256/16</td><td>99 [94.6, 99.8]</td><td>99.0*</td><td>93.8/21.7</td><td>6288/1417</td><td>385.0/87.3</td><td>7442</td><td>299.8/56.8</td><td>5890</td></tr>
+                  <tr><td>OpenVLA-OFT</td><td>224/8</td><td>97 [91.5, 99.0]</td><td>98.4</td><td>--</td><td>--</td><td>1719.9/194.0</td><td>15457</td><td>482.7/125.2</td><td>14040</td></tr>
+                  <tr><td>SmolVLA</td><td>512/1</td><td>96 [90.2, 98.4]</td><td>96.0</td><td>98.9/47.7</td><td>1322/735</td><td>330.6/186.3</td><td>1380</td><td>391.6/44.8</td><td>1069</td></tr>
+                  <tr><td>Evo-1</td><td>448/8</td><td>96 [90.2, 98.4]</td><td>97.7</td><td>180.0/56.6</td><td>1574/822</td><td>775.7/328.0</td><td>1620</td><td>585.7/183.6</td><td>1200</td></tr>
+                  <tr><td>&pi;0.5</td><td>224/10</td><td>96 [90.2, 98.4]</td><td>98.2</td><td>254.1/45.9</td><td>5938/729</td><td>1198.2/198.1</td><td>5987</td><td>568.1/37.7</td><td>5490</td></tr>
+                  <tr><td>VLA-Adapter</td><td>224/8</td><td>96 [90.2, 98.4]</td><td>99.2</td><td>82.1/44.1</td><td>2864/1063</td><td>332.4/189.1</td><td>3697</td><td>239.3/121.5</td><td>2590</td></tr>
+                  <tr><td>GR00T-N1.5</td><td>224/16</td><td>95 [88.8, 97.8]</td><td>95.0*</td><td>95.2/23.2</td><td>4830/1436</td><td>423.2/98.9</td><td>6841</td><td>249.1/28.3</td><td>5550</td></tr>
+                  <tr><td>GR00T-N1.6</td><td>224/16</td><td>88 [80.2, 93.0]</td><td>99.0*</td><td>91.3/23.8</td><td>5918/1441</td><td>389.9/99.8</td><td>7144</td><td>167.3/37.7</td><td>4480</td></tr>
+                  <tr><td>&pi;0</td><td>224/50</td><td>82 [73.3, 88.3]</td><td>79.0*</td><td>203.6/40.2</td><td>5480/833</td><td>1123.5/189.8</td><td>5530</td><td>779.6/83.9</td><td>5060</td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="note">
-              This table has one SR column because the current paper reports the aggregate LIBERO-Object suite result:
-              10 tasks x 20 episodes = 200 episodes per architecture.
-            </p>
+            <p class="note">Success: percent with 95% Wilson interval, 100 episodes per model. Ref.: published rate, or our PyTorch reproduction (*). Input: image side length in pixels; S: executed actions per request. Timing: request P90 / vision-stage latency (ms). CUDA memory: device allocation / host RSS (MiB); Metal and OpenVINO (OV): RSS (MiB). Devices: RTX 3060, Apple M4, and Intel Arc iGPU. --: not measured.</p>
+          </div>
+          <div class="table-block">
+            <h3>All Four LIBERO Suites</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Suite</th><th>BitVLA</th><th>BitVLA ref.</th><th>GR00T-N1.7</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Spatial</td><td>94.5 [90.4, 96.9]</td><td>97.4</td><td>96.0 [92.3, 98.0]</td></tr>
+                  <tr><td>Object</td><td>100 [98.1, 100]</td><td>99.6</td><td>98.0 [95.0, 99.2]</td></tr>
+                  <tr><td>Goal</td><td>92.5 [88.0, 95.4]</td><td>94.4</td><td>97.5 [94.3, 98.9]</td></tr>
+                  <tr><td>Long</td><td>83.5 [77.7, 88.0]</td><td>87.6</td><td>89.0 [83.9, 92.6]</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">Success (%) with 95% Wilson interval, 200 episodes per model per suite. On SimplerEnv WidowX, GR00T-N1.6 at 252-pixel input reaches 80% on "put carrot on plate" and 70% on "put spoon on towel".</p>
+          </div>
+          <div class="result-grid">
+            <article class="result-panel">
+              <h3>CPU and Metal</h3>
+              <p>
+                On an eight-thread i9-14900HX, the CPU backend returns actions in 2.1-9.0 s at 1.4-6.1 GiB peak RSS. On
+                an Apple M4, separate Metal trials reach 9/10 for SmolVLA, 8/10 for &pi;0, and 10/10 for GR00T-N1.7.
+              </p>
+              <dl class="mini-stats">
+                <div><dt>CPU SmolVLA</dt><dd>2141 ms</dd></div>
+                <div><dt>Metal GR00T-N1.7</dt><dd>539 ms, 10/10</dd></div>
+              </dl>
+            </article>
+            <article class="result-panel">
+              <h3>Intel GPUs (SYCL)</h3>
+              <p>
+                On an Intel Arc A380, SYCL cuts request latency against the Ryzen 5 host CPU. The maximum absolute
+                action difference from the CPU outputs is 2.9e-3, for actions of magnitude up to 0.99.
+              </p>
+              <dl class="mini-stats">
+                <div><dt>SmolVLA</dt><dd>1920 to 630 ms</dd></div>
+                <div><dt>Evo-1</dt><dd>7695 to 1176 ms</dd></div>
+                <div><dt>VLA-Adapter</dt><dd>2994 to 517 ms</dd></div>
+              </dl>
+            </article>
           </div>
 
           <div class="libero-video-block">
@@ -350,41 +406,271 @@
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <section class="section" id="latency">
+        <div class="container">
+          <h2>Inference Latency</h2>
+          <p class="section-intro">
+            Seven models are compared on an RTX 3090 against eager PyTorch and <span class="mono">torch.compile</span>,
+            with checkpoint, precision, and inputs held fixed. Timings are the mean of 200 calls after warmup and
+            exclude transport. <span class="mono">vla.cpp</span> is 1.02-6.21x faster than eager execution.
+            Compilation closes much of that gap: against the faster PyTorch configuration, latency is similar for four
+            models and faster for SmolVLA, GR00T-N1.5, and BitVLA.
+          </p>
           <div class="table-block">
-            <h3>Real ALOHA Arm Leaderboard</h3>
+            <h3>Server-Side Latency vs. PyTorch (RTX 3090, ms)</h3>
             <div class="table-wrap">
               <table>
                 <thead>
-                  <tr>
-                    <th>Rank</th>
-                    <th>Engine</th>
-                    <th>Policy</th>
-                    <th>Average SR</th>
-                    <th>task 1</th>
-                    <th>task 2</th>
-                    <th>Task time</th>
-                    <th>Inference/chunk</th>
-                  </tr>
+                  <tr><th>Model</th><th>vla.cpp</th><th>Eager</th><th>Compile</th><th>Speedup</th></tr>
                 </thead>
                 <tbody>
-                  <tr class="best-row"><td>1</td><td>vla.cpp</td><td>GR00T-N1.6 BF16</td><td>35/40 (87.5%)</td><td>18/20 (90%)</td><td>17/20 (85%)</td><td>49 s / 28 s</td><td>~470 ms</td></tr>
-                  <tr><td>2</td><td>pytorch baseline</td><td>GR00T-N1.6 BF16</td><td>16/40 (40.0%)</td><td>3/20 (15%)</td><td>13/20 (65%)</td><td>71 s / 30 s</td><td>~584-688 ms</td></tr>
+                  <tr class="best-row"><td>BitVLA</td><td>51.5</td><td>319.7</td><td>94.6</td><td>1.84x</td></tr>
+                  <tr><td>GR00T-N1.5</td><td>75.4</td><td>100.5</td><td>94.7</td><td>1.26x</td></tr>
+                  <tr><td>SmolVLA</td><td>55.8</td><td>174.1</td><td>65.9</td><td>1.18x</td></tr>
+                  <tr><td>&pi;0</td><td>97.9</td><td>99.4</td><td>99.7</td><td>1.02x</td></tr>
+                  <tr><td>Evo-1</td><td>142.3</td><td>161.6</td><td>142.5</td><td>1.00x</td></tr>
+                  <tr><td>GR00T-N1.6</td><td>61.2</td><td>76.0</td><td>61.1</td><td>1.00x</td></tr>
+                  <tr><td>GR00T-N1.7</td><td>59.9</td><td>66.1</td><td>60.1&dagger;</td><td>1.00x</td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="note">
-              Pass rate is taken from the source worksheet; average time is calculated from successful executions only.
-              pytorch and vla.cpp each have 20 trials per task.
-            </p>
+            <p class="note">Speedup: the faster PyTorch latency divided by vla.cpp latency. Compile uses PyTorch default mode. &dagger; eager fallback enabled via <span class="mono">suppress_errors</span>.</p>
           </div>
+
+          <div class="result-grid">
+            <article class="result-panel">
+              <h3>TensorRT comparison</h3>
+              <p>
+                A matched GR00T-N1.7 comparison on an RTX PRO Blackwell 1000 favors TensorRT, at 70.5 ms median against
+                130.2 ms, a 1.85x difference, with 98/100 and 96/100 successes. TensorRT is the faster option for this
+                configuration; <span class="mono">vla.cpp</span> instead offers one implementation across processor backends.
+              </p>
+            </article>
+            <article class="result-panel">
+              <h3>Where the time goes</h3>
+              <p>
+                On an RTX 5070, vision plus backbone take 52% of execution time for SmolVLA (T=10), 52% for GR00T-N1.6 (T=4),
+                75% for &pi;0 (T=10), and about 99.5% for the direct-head BitVLA. Even with cached observation
+                features, the action expert takes nearly half the time for SmolVLA and GR00T-N1.6.
+              </p>
+            </article>
+          </div>
+
+          <div class="table-block">
+            <h3>Solver-Step Sweep: GR00T-N1.7 on RTX 3060</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>T</th><th>Success (vla.cpp / PyTorch)</th><th>Vision (ms)</th><th>Backbone + head (ms)</th><th>Rel. RMS vs. T=4</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>1</td><td>99 / 96</td><td>18.49</td><td>19.60</td><td>.2290</td></tr>
+                  <tr><td>2</td><td>95 / 98</td><td>18.83</td><td>25.79</td><td>.0684</td></tr>
+                  <tr><td>4</td><td>98 / 94</td><td>18.68</td><td>37.21</td><td>0</td></tr>
+                  <tr><td>8</td><td>98 / 95</td><td>18.68</td><td>60.54</td><td>.0321</td></tr>
+                  <tr><td>16</td><td>95 / 97</td><td>18.86</td><td>107.50</td><td>.0483</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">Success in %, 100 episodes per stack and setting. Vision time stays flat while backbone-plus-head time fits 13.9 + 5.8T ms, which puts total cost at about 32.6 ms fixed plus 5.8 ms per solver step. Client-side fits are about 54 + 6.2T ms for vla.cpp and 67 + 7.3T ms for PyTorch.</p>
+          </div>
+
+          <figure class="figure">
+            <img
+              src="assets/roofline.png"
+              alt="Roofline plots of estimated arithmetic intensity and throughput for VLA models on RTX 3060 and Jetson AGX Orin."
+              width="2700"
+              height="1160"
+            >
+            <figcaption>
+              Estimated arithmetic intensity and throughput. Compute ceilings are measured GEMM rates of 25.6 and 21.3
+              TFLOP/s; bandwidth ceilings are 360 and 204.8 GB/s for RTX 3060 and AGX Orin. Prefix intensity estimates
+              (256-530 FLOPs/byte) exceed the ridge points, while the action expert sits near 50.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section tinted" id="memory">
+        <div class="container">
+          <h2>Memory and Edge Deployment</h2>
+          <p class="section-intro">
+            Memory capacity decides which policies can run onboard. The smallest target is an 8 GB Jetson Orin Nano,
+            where the CPU and GPU share memory with the OS, cameras, and the rest of the robot stack. Five of the seven
+            models in the device study load on the Nano.
+          </p>
+          <div class="table-block">
+            <h3>Seven-Model Device Study</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Model</th><th>S</th><th>RTX 3060</th><th>AGX Orin</th><th>Orin Nano</th><th>Nano RSS</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>SmolVLA</td><td>4</td><td>28.16 / 181</td><td>65.41 / 181</td><td>141.81 / 176</td><td>2031</td></tr>
+                  <tr class="best-row"><td>BitVLA</td><td>8</td><td>37.85 / 200</td><td>101.11 / 200</td><td>355.65 / 200</td><td>2199</td></tr>
+                  <tr><td>Evo-1</td><td>8</td><td>63.60 / 189</td><td>131.01 / 191</td><td>458.84 / 195</td><td>2135</td></tr>
+                  <tr><td>GR00T-N1.5</td><td>16</td><td>14.17 / 192</td><td>28.78 / 195</td><td>84.76 / 192&dagger;</td><td>5975</td></tr>
+                  <tr><td>&pi;0</td><td>32/50</td><td>9.74 / 175</td><td>27.90 / 171</td><td>39.10 / 161&dagger;</td><td>6068</td></tr>
+                  <tr><td>GR00T-N1.6</td><td>16</td><td>10.29 / 173</td><td>26.70 / 180</td><td>OOM</td><td>--</td></tr>
+                  <tr><td>GR00T-N1.7</td><td>16</td><td>10.26 / 196</td><td>26.84 / 197</td><td>OOM</td><td>--</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">Each platform cell gives client inference time per executed action, L/S (ms, including preprocessing and transport), followed by successes out of 200. &pi;0 uses S=32 on RTX and AGX and S=50 on the Nano. RSS: Nano process peak memory (MiB). &dagger; simulator offloaded to another machine. OOM: out of memory.</p>
+          </div>
+
+          <div class="memory-grid">
+            <article class="memory-card">
+              <span class="card-kicker">BitVLA bundle</span>
+              <strong>1.34 GiB</strong>
+              <p>
+                Packing ternary weights shrinks the model file from 5.6 GiB, and cuts transient host allocation during
+                loading from 11.1 to 1.15 GiB.
+              </p>
+            </article>
+            <article class="memory-card">
+              <span class="card-kicker">Desktop device memory</span>
+              <strong>1312 MiB</strong>
+              <p>
+                BitVLA device allocation on the RTX 3060. On the Nano, process peak RSS is 2199 MiB, and peak system use
+                rises 4533 MiB over baseline, a figure that includes the surrounding workload.
+              </p>
+            </article>
+            <article class="memory-card">
+              <span class="card-kicker">Nano coverage</span>
+              <strong>5 / 7</strong>
+              <p>
+                GR00T-N1.6/N1.7 exceed the available memory. GR00T-N1.5 and &pi;0 fit only with the simulator on another machine.
+              </p>
+            </article>
+          </div>
+
+          <div class="result-grid">
+            <article class="result-panel">
+              <h3>IMMA tensor-core kernel</h3>
+              <p>
+                Replacing BitVLA's <span class="mono">dp4a</span> path with IMMA tensor-core instructions reduces client
+                inference time per executed action by 4.57x on RTX 3060 and 4.02x on AGX Orin at S=8. Task success
+                stays at 100%. Compact storage lowers the loading footprint; tensor-core execution lowers inference time.
+              </p>
+              <dl class="mini-stats">
+                <div><dt>RTX 3060</dt><dd>172.8 to 37.85 ms</dd></div>
+                <div><dt>AGX Orin</dt><dd>406.6 to 101.11 ms</dd></div>
+              </dl>
+            </article>
+            <article class="result-panel">
+              <h3>GGUF quantization</h3>
+              <p>
+                For GR00T-N1.7, the most compact file (Q4_0 with the vision tower also quantized) is 4556 MB against
+                6292 MB for BF16, with a 1.144x fixed-input speedup and 195/200 successes. Fixed-input error alone does
+                not predict task success.
+              </p>
+            </article>
+          </div>
+          <div class="table-block">
+            <h3>GR00T-N1.7 Quantization (RTX 3060)</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Weights</th><th>File (MB)</th><th>Speedup</th><th>Rel. RMS</th><th>Success</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>BF16</td><td>6292.4</td><td>1.000x</td><td>0</td><td>196/200</td></tr>
+                  <tr><td>Q8_0</td><td>5537.4</td><td>1.077x</td><td>.0043</td><td>197/200</td></tr>
+                  <tr><td>Q4_0</td><td>5134.8</td><td>1.081x</td><td>.0480</td><td>190/200</td></tr>
+                  <tr><td>Q8_0 + V</td><td>5160.0</td><td>1.131x</td><td>.0050</td><td>195/200</td></tr>
+                  <tr><td>Q4_0 + V</td><td>4556.0</td><td>1.144x</td><td>.0490</td><td>195/200</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">LIBERO-Object, 200 episodes per configuration, S=16. Speedup and relative RMS use fixed inputs; the error compares 5280 action values against BF16. +V also quantizes the vision tower.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="precision">
+        <div class="container">
+          <h2>Positional-Index Precision</h2>
+          <p class="section-intro">
+            SmolVLA shows how a small implementation difference can change policy behavior. Its vision encoder maps
+            patch coordinates to discrete indices that select learned position embeddings. Computing those coordinates
+            at a different precision can push a value across an index boundary and select a different embedding.
+          </p>
+          <div class="memory-grid">
+            <article class="memory-card">
+              <span class="card-kicker">Position-embedding error</span>
+              <strong>0.32 to 0.003</strong>
+              <p>Relative error after matching the half-precision reference computation.</p>
+            </article>
+            <article class="memory-card">
+              <span class="card-kicker">Action difference</span>
+              <strong>1.97 to &lt;0.01</strong>
+              <p>The maximum difference sits on the gripper channel and is large enough to reverse the gripper command.</p>
+            </article>
+            <article class="memory-card">
+              <span class="card-kicker">LIBERO-Object task 0</span>
+              <strong>2/10 to 9/10</strong>
+              <p>Success on placing a soup container in a basket, once index precision matches the reference.</p>
+            </article>
+          </div>
+          <p class="note">
+            Numerical validation must therefore cover discrete preprocessing decisions as well as floating-point network
+            operations. On Metal, running the vision and language towers in 32-bit cuts the fixed-input action discrepancy
+            from 2.0e-3 to 8.3e-5, at a cost of 33 ms and 672 MiB.
+          </p>
+        </div>
+      </section>
+
+      <section class="section tinted" id="robots">
+        <div class="container">
+          <h2>Physical Deployment and Execution Horizon</h2>
+          <p class="section-intro">
+            The runtime drives a UR10e manipulator and an ALOHA robot with synchronous chunked control: the client
+            executes S actions from each chunk, then waits for the next prediction.
+          </p>
+
+          <figure class="figure">
+            <img
+              src="assets/ur10e.jpg"
+              alt="UR10e cup pick-and-place task in three stages: pick up the cup, move to the box, drop the cup down."
+              width="2070"
+              height="577"
+            >
+            <figcaption>
+              UR10e cup pick-and-place with SmolVLA fine-tuned on 80 demonstrations. All 80 evaluated rollouts grasp
+              the cup and carry it to the basket; every failure happens at release.
+            </figcaption>
+          </figure>
+          <div class="table-block">
+            <h3>UR10e Deployment Across Backends (SmolVLA)</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Backend</th><th>Round trip (ms)</th><th>Success [95% CI]</th><th>Effective rate</th></tr>
+                </thead>
+                <tbody>
+                  <tr class="best-row"><td>CUDA, RTX 5070 laptop</td><td>111.4</td><td>15/20 [53.1, 88.8]</td><td>17.7 Hz</td></tr>
+                  <tr><td>Metal, Mac Mini M4</td><td>582.0</td><td>12/20 [38.7, 78.1]</td><td>12.8 Hz</td></tr>
+                  <tr><td>CPU, i9-14900HX</td><td>2164.4</td><td>12/20 [38.7, 78.1]</td><td>7.1 Hz</td></tr>
+                  <tr><td>CPU, Ryzen 7 6850HS</td><td>3652.9</td><td>14/20 [48.1, 85.5]</td><td>5.0 Hz</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="note">S=25 actions at 20 Hz, 20 episodes per backend. Rate counts executed actions per wall-clock second. Metal and Ryzen include about 161 ms of network time; Metal runs the vision and language computations in FP32. Round-trip latency varies 33x, and the share of wall time blocked on prediction grows from 8% to 73%.</p>
+          </div>
+
 
           <section class="aloha-benchmark" id="aloha-evidence" aria-labelledby="aloha-title">
             <div class="section-heading-row">
               <div>
-                <h3 id="aloha-title">Real ALOHA Left Arm Benchmark</h3>
+                <h3 id="aloha-title">ALOHA Deployment</h3>
                 <p>
-                  GR00T N1.6 BF16 inference comparison on two physical manipulation tasks. The visualization separates
-                  success rate, successful-trial time, server latency, and uploaded trial evidence.
+                  GR00T-N1.6 runs on an embedded Jetson AGX Orin and drives the ALOHA left arm on two tabletop tasks,
+                  with 20 trials per task.
                 </p>
               </div>
             </div>
@@ -406,99 +692,26 @@
               </article>
             </div>
 
-            <div class="success-summary-grid" aria-label="average success rates">
-              <article>
-                <span>pytorch average success rate</span>
-                <strong>40.0%</strong>
-                <p>16/40 successful trials across task 1 and task 2.</p>
-              </article>
-              <article>
-                <span>vla.cpp average success rate</span>
-                <strong>87.5%</strong>
-                <p>35/40 successful trials across task 1 and task 2.</p>
-              </article>
-            </div>
-
             <div class="aloha-highlight-grid">
               <article class="aloha-highlight">
-                <span>best combined pass rate</span>
-                <strong>87.5%</strong>
-                <p>vla.cpp-BF16, 35/40 trials</p>
+                <span>task 1 success</span>
+                <strong>18/20</strong>
+                <p>blocks into the white box, about 49 s per completion</p>
               </article>
               <article class="aloha-highlight">
-                <span>best task 1</span>
-                <strong>90%</strong>
-                <p>vla.cpp-BF16, 18/20 blocks-to-box trials</p>
+                <span>task 2 success</span>
+                <strong>17/20</strong>
+                <p>trash into the box, banana onto the dish, about 28 s per completion</p>
               </article>
               <article class="aloha-highlight">
-                <span>best task 2</span>
-                <strong>85%</strong>
-                <p>vla.cpp-BF16, 17/20 trash-and-banana trials</p>
+                <span>inference per chunk</span>
+                <strong>~470 ms</strong>
+                <p>GR00T-N1.6 on AGX Orin</p>
               </article>
               <article class="aloha-highlight">
-                <span>fastest task 2 avg.</span>
-                <strong>0m28s</strong>
-                <p>vla.cpp-BF16, successful trials only</p>
-              </article>
-            </div>
-
-            <div class="chart-grid">
-              <article class="chart-card">
-                <h4>pass rate by task</h4>
-                <div class="bar-group">
-                  <span class="bar-label">pytorch task 1</span>
-                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 15%;"></span></div>
-                  <strong>15%</strong>
-                </div>
-                <div class="bar-group">
-                  <span class="bar-label">vla.cpp task 1</span>
-                  <div class="bar-track"><span class="bar-fill" style="--value: 90%;"></span></div>
-                  <strong>90%</strong>
-                </div>
-                <div class="bar-group">
-                  <span class="bar-label">pytorch task 2</span>
-                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 65%;"></span></div>
-                  <strong>65%</strong>
-                </div>
-                <div class="bar-group">
-                  <span class="bar-label">vla.cpp task 2</span>
-                  <div class="bar-track"><span class="bar-fill" style="--value: 85%;"></span></div>
-                  <strong>85%</strong>
-                </div>
-              </article>
-              <article class="chart-card">
-                <h4>average successful time</h4>
-                <div class="bar-group">
-                  <span class="bar-label">pytorch task 1</span>
-                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 100%;"></span></div>
-                  <strong>1m11s</strong>
-                </div>
-                <div class="bar-group">
-                  <span class="bar-label">vla.cpp task 1</span>
-                  <div class="bar-track"><span class="bar-fill" style="--value: 69%;"></span></div>
-                  <strong>0m49s</strong>
-                </div>
-                <div class="bar-group">
-                  <span class="bar-label">pytorch task 2</span>
-                  <div class="bar-track"><span class="bar-fill muted-fill" style="--value: 42%;"></span></div>
-                  <strong>0m30s</strong>
-                </div>
-                <div class="bar-group">
-                  <span class="bar-label">vla.cpp task 2</span>
-                  <div class="bar-track"><span class="bar-fill" style="--value: 39%;"></span></div>
-                  <strong>0m28s</strong>
-                </div>
-              </article>
-            </div>
-
-            <div class="latency-grid" aria-label="ALOHA latency snapshots">
-              <article>
-                <span>pytorch baseline</span>
-                <strong>584-688 ms</strong>
-              </article>
-              <article>
-                <span>vla.cpp-BF16</span>
-                <strong>451-507 ms</strong>
+                <span>chunked control</span>
+                <strong>H=8, S=7</strong>
+                <p>1.3 s replan period</p>
               </article>
             </div>
 
@@ -507,8 +720,8 @@
                 <div>
                   <h3>ALOHA Experiment Videos</h3>
                   <p>
-                    Each page shows one trial: one setup image plus external camera overview, camera wrist left, and camera
-                    high videos for pytorch and vla.cpp.
+                    Each page shows one vla.cpp trial: the setup image plus the external overview, left-wrist, and
+                    high camera videos.
                   </p>
                 </div>
                 <span id="evidence-count" class="evidence-count">0 trials</span>
@@ -553,136 +766,77 @@
 
           <div class="result-grid">
             <article class="result-panel">
-              <h3>pytorch reference comparison</h3>
+              <h3>Controlled delay injection</h3>
               <p>
-                On SmolVLA BF16 over LIBERO-Object, <span class="mono">vla.cpp</span> reduces environment-observed step
-                latency from 223.96 ms to 28.16 ms while keeping peak VRAM essentially unchanged.
+                To separate inference delay from hardware and precision, an artificial delay is inserted after
+                GR00T-N1.7 inference on an RTX 4070 and before each chunk reaches ALOHA. Across delays from 0 to 2000 ms,
+                success stays at 9/10 or 10/10 (ten episodes per condition), and executed steps do not rise monotonically.
               </p>
               <dl class="mini-stats">
-                <div><dt>pytorch</dt><dd>223.96 ms, 1406 MiB</dd></div>
-                <div><dt>vla.cpp</dt><dd>28.16 ms, 1410 MiB</dd></div>
+                <div><dt>0 / 150 / 330 ms</dt><dd>10/10 each</dd></div>
+                <div><dt>530 / 1000 ms</dt><dd>9/10 each</dd></div>
+                <div><dt>2000 ms</dt><dd>10/10</dd></div>
               </dl>
             </article>
             <article class="result-panel">
-              <h3>IMMA Tensor-Core Kernel</h3>
+              <h3>Execution horizon in simulation</h3>
               <p>
-                Moving BitVLA ternary matrix multiplication from a DP4A path to IMMA tensor cores cuts per-step latency
-                by 4.6x on RTX 3060 and 4.0x on AGX Orin while preserving numerical output.
+                SmolVLA on LIBERO-Object (Orin Nano, H=50, 50 episodes per setting) peaks at 49/50 with S=16. It falls to
+                19/50 at S=50, where the robot executes the whole chunk before observing again. A larger S spreads
+                inference over more actions but delays feedback, so runtime comparisons should report both S and T.
               </p>
               <dl class="mini-stats">
-                <div><dt>RTX 3060</dt><dd>172.8 ms to 37.85 ms</dd></div>
-                <div><dt>AGX Orin</dt><dd>406.6 ms to 101.11 ms</dd></div>
+                <div><dt>S=16</dt><dd>98%, 35.8 Hz</dd></div>
+                <div><dt>S=50</dt><dd>38%, 109.4 Hz</dd></div>
               </dl>
             </article>
           </div>
 
           <figure class="figure">
             <img
-              src="assets/roofline.png"
-              alt="Roofline plots placing single-request VLA inference in the compute-bound region on RTX 3060 and Jetson AGX Orin."
-              width="2430"
-              height="1044"
+              src="assets/replan-sweep.png"
+              alt="SmolVLA execution-horizon sweep: task success and inference throughput against executed steps per inference call."
+              width="1260"
+              height="696"
             >
             <figcaption>
-              The roofline analysis places batch-1 VLA inference in the compute-bound regime, making utilization the
-              deployment lever for latency after footprint is controlled.
+              SmolVLA execution-horizon sweep on Orin Nano. Error bars are 95% Wilson intervals. Throughput S/L excludes
+              action execution and transport.
             </figcaption>
           </figure>
-
-          <div class="table-block">
-            <h3>Hardware Tiers</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Model</th>
-                    <th>RTX 3060</th>
-                    <th>AGX Orin</th>
-                    <th>Orin Nano</th>
-                    <th>Nano RSS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td>SmolVLA</td><td>28.16 ms</td><td>65.41 ms</td><td>141.81 ms</td><td>2031 MiB</td></tr>
-                  <tr><td>BitVLA</td><td>37.85 ms</td><td>101.11 ms</td><td>355.65 ms</td><td>2199 MiB</td></tr>
-                  <tr><td>Evo-1</td><td>63.60 ms</td><td>131.01 ms</td><td>458.84 ms</td><td>2135 MiB</td></tr>
-                  <tr><td>GR00T-N1.5</td><td>14.17 ms</td><td>28.78 ms</td><td>84.76 ms*</td><td>5975 MiB</td></tr>
-                  <tr><td>pi0</td><td>9.74 ms</td><td>27.90 ms</td><td>39.10 ms*</td><td>6068 MiB</td></tr>
-                  <tr><td>GR00T-N1.6</td><td>10.29 ms</td><td>26.70 ms</td><td>Does not fit</td><td>-</td></tr>
-                  <tr><td>GR00T-N1.7</td><td>10.26 ms</td><td>26.84 ms</td><td>Does not fit</td><td>-</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">* Run split with simulator offloaded to another machine.</p>
-          </div>
-
         </div>
       </section>
 
-      <section class="section" id="memory">
-        <div class="container">
-          <h2>Memory Efficiency</h2>
-          <p class="section-intro">
-            The smallest robot target is an 8 GB Jetson Orin Nano, where the model must share unified memory with the
-            OS, camera stack, simulator or robot client, and the rest of the autonomy pipeline.
-          </p>
-          <div class="memory-grid">
-            <article class="memory-card">
-              <span class="card-kicker">BitVLA bundle</span>
-              <strong>1.34 GiB</strong>
-              <p>
-                Packed ternary weights reduce the on-disk model from 5.6 GiB while keeping the same numerical values at
-                inference.
-              </p>
-            </article>
-            <article class="memory-card">
-              <span class="card-kicker">Load high-water mark</span>
-              <strong>1.15 GiB</strong>
-              <p>
-                The packed layout drops load-time memory pressure enough for BitVLA to run on the Nano-class target.
-              </p>
-            </article>
-            <article class="memory-card">
-              <span class="card-kicker">Nano coverage</span>
-              <strong>5 / 7</strong>
-              <p>
-                Five architectures fit the 8 GB tier; the largest GR00T variants still exceed the shared-memory budget.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section tinted" id="comparison">
+      <section class="section" id="comparison">
         <div class="container">
           <h2>Comparison</h2>
           <p class="section-intro">
-            The project targets runtime portability and utilization. Quantization, vendor compilers, and Python reference
-            servers solve adjacent parts of the deployment problem.
+            The project targets shared execution across VLA architectures and processor backends, with numerical checks
+            and robot evaluation. Python reference stacks, quantization, and vendor compilers each solve adjacent
+            parts of the deployment problem.
           </p>
           <div class="comparison-grid">
             <article>
               <h3>Python reference servers</h3>
               <p>
-                Reference stacks preserve research flexibility, but eager pytorch dispatch leaves batch-1 VLA inference
-                launch-bound. On SmolVLA, <span class="mono">vla.cpp</span> reduces step latency from 223.96 ms to
-                28.16 ms on the same RTX 3060 setup.
+                Eager PyTorch dispatch leaves batch-1 VLA inference launch-bound. <span class="mono">torch.compile</span>
+                closes much of the gap. Against the faster of the two on an RTX 3090, <span class="mono">vla.cpp</span>
+                matches four models and is 1.18-1.84x faster on three, with no Python in the model path.
               </p>
             </article>
             <article>
               <h3>Quantization-only deployment</h3>
               <p>
-                Weight packing controls footprint, but single-request VLA inference remains compute-bound. The BitVLA
-                speedup comes from moving the same ternary math onto IMMA tensor cores, not from changing the packed
-                format alone.
+                Weight packing controls footprint but not arithmetic cost. Packing BitVLA leaves latency unchanged; the
+                4.0-4.6x speedup comes from moving the same ternary math onto IMMA tensor cores.
               </p>
             </article>
             <article>
               <h3>Single-target compilers</h3>
               <p>
-                Vendor compilers can be strong for one model on one device generation. <span class="mono">vla.cpp</span>
-                instead emphasizes one bundle protocol and one serving path across several VLA architectures and hardware
-                tiers.
+                TensorRT is 1.85x faster for GR00T-N1.7 on an RTX PRO Blackwell 1000, but it targets NVIDIA only.
+                <span class="mono">vla.cpp</span> favors one bundle format and one serving path across eleven models on
+                NVIDIA, Apple, and Intel hardware, including CPUs.
               </p>
             </article>
           </div>

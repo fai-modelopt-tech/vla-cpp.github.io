@@ -1154,9 +1154,11 @@ td:first-child {
 
 .trial-video-grid {
   display: grid;
-  grid-template-columns: 92px repeat(2, minmax(0, 1fr));
+  grid-template-columns: 92px minmax(0, 1fr);
   align-items: stretch;
   gap: 12px;
+  max-width: 760px;
+  margin-inline: auto;
 }
 
 .trial-video-head,

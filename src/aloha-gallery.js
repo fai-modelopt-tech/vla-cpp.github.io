@@ -27,11 +27,6 @@
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
 
-  const variantOrder = {
-    "Baseline-Pytorch-BF16": 0,
-    "vla.cpp-BF16": 1,
-  };
-
   const taskOrder = {
     "Task 1": 0,
     "Task 2": 1,
@@ -45,12 +40,10 @@
 
   const compareEvidence = (a, b) =>
     (taskOrder[a.task] ?? 99) - (taskOrder[b.task] ?? 99) ||
-    Number(a.trial) - Number(b.trial) ||
-    (variantOrder[a.variant] ?? 99) - (variantOrder[b.variant] ?? 99);
+    Number(a.trial) - Number(b.trial);
 
-  const variantName = (variant) => (variant === "vla.cpp-BF16" ? "vla.cpp" : "pytorch");
   const trialTitle = (item) =>
-    `${variantName(item.variant)} · ${String(item.task).toLowerCase()} · trial ${String(item.trial).padStart(2, "0")}`;
+    `vla.cpp · ${String(item.task).toLowerCase()} · trial ${String(item.trial).padStart(2, "0")}`;
 
   const selected = (key) => {
     const control = filters[key];
@@ -193,7 +186,7 @@
       return;
     }
 
-    const itemsByVariant = Object.fromEntries(group.items.map((item) => [item.variant, item]));
+    const item = group.items[0];
     const title = `${String(group.task).toLowerCase()} · trial ${String(group.trial).padStart(2, "0")}`;
 
     gallery.innerHTML = `
@@ -209,16 +202,12 @@
             <img src="${escapeHtml(setupImage(group.task, group.items[0]?.setupIndex ?? 1))}" alt="${escapeHtml(title)} setup image.">
           </span>
         </figure>
-        <div class="trial-video-grid" aria-label="${escapeHtml(title)} video comparison">
-          <span class="trial-video-head"></span>
-          <span class="trial-video-head">pytorch</span>
-          <span class="trial-video-head">vla.cpp</span>
+        <div class="trial-video-grid" aria-label="${escapeHtml(title)} videos">
           ${cameraViews
             .map(
               (view) => `
                 <span class="trial-camera-label">${escapeHtml(view.label)}</span>
-                ${videoCell(itemsByVariant["Baseline-Pytorch-BF16"], view)}
-                ${videoCell(itemsByVariant["vla.cpp-BF16"], view)}
+                ${videoCell(item, view)}
               `,
             )
             .join("")}

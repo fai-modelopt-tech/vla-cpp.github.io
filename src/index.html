@@ -1,880 +1,730 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta
-      name="description"
-      content="vla.cpp is a unified C++ inference runtime for eleven vision-language-action models across CUDA, Metal, CPU, SYCL, and OpenVINO, built on llama.cpp."
-    >
-    <title>vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <header class="site-header">
-      <nav class="nav" aria-label="Main navigation">
-        <div class="brand-lockup">
-          <a class="brand" href="#top" aria-label="vla.cpp home">
-            <img class="brand-logo" src="assets/logo_vlacpp_transparent.png" alt="vla.cpp">
-          </a>
-        </div>
-        <div class="nav-links">
-          <a href="#abstract">Abstract</a>
-          <a href="#media">Media</a>
-          <a href="#architecture">Architecture</a>
-          <a href="#contributions">Contributions</a>
-          <a href="#method">Method</a>
-          <a href="#results">Leaderboard</a>
-          <a href="#latency">Latency</a>
-          <a href="#memory">Memory</a>
-          <a href="#robots">Robots</a>
-          <a href="#comparison">Comparison</a>
-          <a href="#citation">BibTeX</a>
-        </div>
-      </nav>
-    </header>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models</title>
+<meta name="description" content="vla.cpp, a unified C++ inference runtime that serves thirteen vision-language-action policies across CPU, CUDA, ROCm, Metal, SYCL, OpenVINO and Hexagon, down to an 8 GB Jetson Orin Nano.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+<style>
+/* Theme follows nerfies.github.io by way of the vla.simd page: Bulma's neutrals
+   (#363636 headings, #4a4a4a body, #3273dc links, #dbdbdb borders, #f5f5f5 panels),
+   Noto Sans throughout, dark rounded pill buttons, a 960px column and 10px radii.
+   One departure, kept from vla.simd: a second accent. Here it separates the runtime's
+   own numbers from the baselines they are measured against. */
+:root{
+  color-scheme: light;
+  --ink:#363636;             /* Bulma dark: headings, buttons */
+  --body:#4a4a4a;            /* Bulma text */
+  --muted:#7a7a7a;           /* captions, secondary */
+  --faint:#b5b5b5;
+  --line:#dbdbdb;            /* Bulma border */
+  --line-soft:#ededed;
+  --panel:#f5f5f5;           /* nerfies interpolation-panel */
+  --link:#3273dc;            /* Bulma link, and every selection affordance */
+  --link-hover:#363636;
+  --engine:#3D5A80;          /* vla.cpp - slate, always monospace so it never reads as a link */
+  --ours:#0F766E;            /* our measured results, against neutral baselines */
+  --bad:#cc0f35;
+  --sans:'Google Sans','Noto Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;
+  --col:960px;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#fff;color:var(--body);font-family:var(--sans);
+     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:var(--col);margin:0 auto;padding:0 24px}
 
-    <main id="top">
-      <section class="hero">
-        <div class="container hero-inner">
-          <h1>
-            <span class="hero-title-line">vla.cpp: A Unified Inference Runtime for</span>
-            <span class="hero-title-line">Vision-Language-Action Models</span>
-          </h1>
-          <p class="lead">
-            A unified C++ runtime built on <span class="mono">ggml</span> and <span class="mono">llama.cpp</span> that
-            serves eleven VLA policies, iterative and regression heads alike, from self-contained GGUF bundles on CUDA,
-            Metal, CPU, SYCL, and OpenVINO, from desktop GPUs down to an 8 GB Jetson Orin Nano.
-          </p>
-          <p class="authors">
-            Anonymous Authors
-          </p>
-          <div class="hero-highlight-panel">
-            <div class="actions" aria-label="Release links">
-              <a class="button secondary" href="https://huggingface.co/fai-modelopt-tech" target="_blank" rel="noopener">
-                <span class="button-icon button-icon-text" aria-hidden="true">HF</span>
-                <span>Models</span>
-              </a>
-              <a class="button secondary" href="#citation">
-                <span class="button-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" role="img">
-                    <path d="M8 4H6a3 3 0 0 0-3 3v2a3 3 0 0 1-2 3 3 3 0 0 1 2 3v2a3 3 0 0 0 3 3h2" />
-                    <path d="M16 4h2a3 3 0 0 1 3 3v2a3 3 0 0 0 2 3 3 3 0 0 0-2 3v2a3 3 0 0 1-3 3h-2" />
-                  </svg>
-                </span>
-                <span>BibTeX</span>
-              </a>
-            </div>
-            <p class="release-note">Code and paper links are coming soon.</p>
-            <div class="claim-strip" aria-label="Core contributions">
-              <article>
-                <strong>One runtime, eleven models</strong>
-                <span>Shared loading, tensor execution, and serving; model-specific attention, conditioning, and action heads.</span>
-              </article>
-              <article>
-                <strong>Five backends</strong>
-                <span>CUDA, Metal, CPU, SYCL, and OpenVINO behind one tensor interface and one request/response protocol.</span>
-              </article>
-              <article>
-                <strong>Simulation to real robots</strong>
-                <span>LIBERO and SimplerEnv evaluation, Jetson Orin Nano deployment, and UR10e and ALOHA arms.</span>
-              </article>
-            </div>
-          </div>
-        </div>
-      </section>
+/* ---------------- hero ---------------- */
+header{text-align:center;padding:3.5rem 0 0}
+h1{font-family:var(--sans);font-weight:600;font-size:clamp(2rem,4.4vw,3rem);line-height:1.15;
+   letter-spacing:-.01em;color:var(--ink);margin:0 auto 1.4rem;max-width:880px}
+h1 .eng{font-family:var(--mono);font-size:.86em;color:var(--engine);letter-spacing:-.02em}
+.punch{font-size:1.25rem;line-height:1.5;color:var(--body);margin:0 auto 1rem;max-width:720px}
 
-      <section class="section media-section" id="media">
-        <div class="container">
-          <div class="media-layout">
-            <div class="media-stack" aria-label="main demonstration video">
-              <figure class="media-card showcase-card">
-                <div class="showcase-video-shell">
-                  <video class="showcase-video" controls autoplay loop muted preload="metadata" playsinline>
-                    <source src="assets/showcase/vla-cpp-intro.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-              </figure>
-            </div>
-          </div>
-        </div>
-      </section>
+.links{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:1.6rem 0 0}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:400;
+  padding:.5em 1.1em;border-radius:290486px;text-decoration:none;
+  background:var(--ink);color:#fff;border:1px solid transparent;transition:background .15s}
+.btn:hover{background:#2b2b2b;color:#fff}
+.btn.soon{background:#fff;color:var(--faint);border-color:var(--line);cursor:default;pointer-events:none}
+.btn .ic{font-size:.88em;line-height:1}
+.notice{max-width:720px;margin:1.6rem auto 0;padding:.75rem 1rem;background:var(--panel);
+  border-radius:var(--r);font-size:14px;line-height:1.55;color:var(--body);text-align:left}
+.notice b{color:var(--ink);font-weight:600}
 
-      <section class="section" id="abstract">
-        <div class="container narrow">
-          <h2>Abstract</h2>
-          <p>
-            Deploying vision-language-action (VLA) models on robots requires adapting model-specific inference
-            pipelines to heterogeneous processors and limited onboard memory. We present <span class="mono">vla.cpp</span>,
-            a unified C++ inference runtime for eleven VLA models. The runtime shares model loading, tensor execution,
-            and serving while retaining architecture-specific attention, conditioning, and action heads. Iterative
-            policies reuse observation-dependent computation across solver steps; regression policies use a direct
-            prediction path.
-          </p>
-          <p>
-            We evaluate task success on LIBERO-Object and profile supported configurations on NVIDIA, Apple, and Intel
-            hardware. BitVLA completes 200/200 LIBERO-Object episodes on an 8 GB Jetson Orin Nano; a separate desktop
-            measurement records 1.3 GiB of device memory. A ternary tensor-core kernel accelerates its client inference
-            by 4.0-4.6x over the CUDA-core baseline on RTX 3060 and AGX Orin. A SmolVLA case study identifies a
-            positional-index precision mismatch that changes gripper commands and task success, motivating fixed-input
-            numerical checks alongside rollout evaluation. Physical deployments on UR10e and ALOHA demonstrate robot
-            integration, while separate delay and execution-horizon studies characterize synchronous action replay.
-          </p>
-          <div class="keyword-list" aria-label="Keywords">
-            <span>VLA inference</span>
-            <span>llama.cpp / ggml</span>
-            <span>GGUF bundles</span>
-            <span>CUDA / Metal / SYCL / OpenVINO</span>
-            <span>LIBERO</span>
-            <span>UR10e and ALOHA</span>
-            <span>Jetson deployment</span>
-            <span>numerical validation</span>
-          </div>
-        </div>
-      </section>
+/* backend chips above the abstract, in each vendor's brand colour: --c is the colour as in its
+   logo (the dot), --t the same hue darkened only as far as 4.5:1 contrast needs (the name), --bg a
+   light tint of it. NVIDIA #76B900, AMD #ED1C24, Qualcomm #3253DC, Intel #0068B5, Apple silver.
+   CPU has no one vendor, so it takes the page's own ink, darker than Apple's grey. */
+.bk-h{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  text-align:center;margin:0 0 .7rem}
+.bk{list-style:none;padding:0;margin:0 auto 2.6rem;display:flex;flex-wrap:wrap;justify-content:center;
+  gap:.5rem}
+.bk li{display:inline-flex;align-items:center;gap:.42em;padding:.38em .8em;border-radius:290486px;
+  font-size:13.5px;line-height:1.35;color:var(--body);white-space:nowrap;background:var(--bg)}
+.bk li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.bk li b{font-weight:600;color:var(--t)}
+.bk .cuda{--c:#76b900;--t:#4e7a00;--bg:#eff7e0}
+.bk .rocm{--c:#ed1c24;--t:#d31118;--bg:#fdebeb}
+.bk .npu{--c:#3253dc;--t:#3253dc;--bg:#eaeefc}
+.bk .ov{--c:#0068b5;--t:#0068b5;--bg:#e6f0f8}
+.bk .metal{--c:#a2aaad;--t:#616b6e;--bg:#ebeced}
+.bk .cpu{--c:var(--ink);--t:var(--ink);--bg:var(--panel)}
 
-      <section class="section tinted" id="architecture">
-        <div class="container">
-          <h2>System Architecture</h2>
-          <figure class="figure">
-            <img
-              src="assets/vla-cpp-diagram-rendered.png"
-              alt="vla.cpp architecture: a Python client sends observations over Protobuf and ZeroMQ to the C++ runtime, which loads GGUF weights and returns action chunks through llama.cpp's ggml hardware backends."
-              width="1645"
-              height="498"
-            >
-            <figcaption>
-              The C++ server loads GGUF weights and returns action chunks; the client owns sensing and control. Model
-              adapters select model-specific computation. CUDA and CPU illustrate the backend layer; Metal, SYCL, and
-              OpenVINO use the same runtime interface.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
+/* hero video, nerfies teaser treatment */
+.teaser{margin:0}
+.teaser video{display:block;width:100%;height:auto;border-radius:var(--r);
+  border:1px solid var(--line);background:#000}
+.teaser .cap{font-size:14px;color:var(--muted);margin:.7rem 0 0;text-align:center}
 
-      <section class="section tinted" aria-labelledby="highlights-title">
-        <div class="container">
-          <h2 id="highlights-title">Highlights</h2>
-          <div class="metric-grid">
-            <article class="metric">
-              <strong>11</strong>
-              <span>VLA models in one runtime</span>
-            </article>
-            <article class="metric">
-              <strong>5</strong>
-              <span>backends: CUDA, Metal, CPU, SYCL, OpenVINO</span>
-            </article>
-            <article class="metric">
-              <strong>10 / 11</strong>
-              <span>models within 3.2 pp of reference success</span>
-            </article>
-            <article class="metric">
-              <strong>200 / 200</strong>
-              <span>BitVLA episodes on 8 GB Orin Nano</span>
-            </article>
-            <article class="metric">
-              <strong>4.0-4.6x</strong>
-              <span>ternary tensor-core speedup</span>
-            </article>
-            <article class="metric">
-              <strong>2</strong>
-              <span>physical robots: UR10e and ALOHA</span>
-            </article>
-          </div>
-        </div>
-      </section>
+/* ---------------- sections ---------------- */
+section{padding:3rem 0 0}
+h2{font-family:var(--sans);font-weight:600;font-size:2rem;line-height:1.2;text-align:center;
+   color:var(--ink);margin:0 0 1.6rem}
+h3{font-size:1.5rem;font-weight:600;color:var(--ink);margin:2.4rem 0 .3rem}
+h3 .n{display:block;font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.3rem}
+p{margin:1rem 0}
+a{color:var(--link);text-decoration:none}
+a:hover{color:var(--link-hover);text-decoration:underline}
+strong,b{font-weight:600;color:var(--ink)}
+code{font-family:var(--mono);font-size:.88em;color:var(--engine);white-space:nowrap}
+.abstract{text-align:justify;hyphens:auto}
+.subnote{color:var(--muted);margin-top:0}
+.lede{text-align:center;color:var(--muted);font-size:15.5px;max-width:66ch;margin:0 auto}
 
-      <section class="section" id="contributions">
-        <div class="container">
-          <h2>Key Contributions</h2>
-          <div class="contribution-grid">
-            <article>
-              <span>01</span>
-              <h3>Unified runtime</h3>
-              <p>
-                Shared execution infrastructure across eleven VLA models, flow-matching, diffusion-style, and direct
-                regression heads, while preserving each model's attention patterns and action generation.
-              </p>
-              <div class="contribution-tags">
-                <em>11 model adapters</em>
-                <em>GGUF bundles</em>
-                <em>ZeroMQ + Protobuf</em>
-              </div>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>Numerical validation</h3>
-              <p>
-                A fixed-input prediction check compares runtime actions with reference actions. A SmolVLA case study
-                links positional-index precision to flipped gripper commands and task success.
-              </p>
-              <div class="contribution-tags">
-                <em>fixed-input checks</em>
-                <em>tensor dumps</em>
-                <em>2/10 to 9/10 fix</em>
-              </div>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>Systems evaluation</h3>
-              <p>
-                Evaluation across processors and two robot platforms, covering memory-constrained Jetson deployment,
-                ternary tensor-core acceleration, quantization, solver steps, and chunked control.
-              </p>
-              <div class="contribution-tags">
-                <em>NVIDIA / Apple / Intel</em>
-                <em>UR10e + ALOHA</em>
-                <em>execution horizon</em>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
+/* ---------------- figures ---------------- */
+figure{margin:1.6rem 0 0;text-align:center}
+figure img{display:block;width:100%;height:auto;margin:0 auto;border-radius:var(--r)}
+figure.narrow img{max-width:640px}
+figure.narrow figcaption{max-width:640px;margin-left:auto;margin-right:auto}
+figcaption{font-size:14px;line-height:1.5;color:var(--muted);margin-top:.8rem;text-align:left}
+figcaption b{color:var(--ink);font-weight:600}
 
-      <section class="section" id="method">
-        <div class="container">
-          <h2>Method</h2>
-          <p class="section-intro">
-            <span class="mono">vla.cpp</span> separates model adapters, tensor-execution backends, and robot clients.
-            Adapters define policy-specific graphs, backends execute their operators, and clients handle tokenization,
-            sensing, command mapping, and action replay. Model execution runs in C++ without PyTorch.
-          </p>
-          <div class="feature-list">
-            <article>
-              <h3>Iterative and regression heads</h3>
-              <p>
-                Iterative policies (SmolVLA, &pi;0, &pi;0.5, Evo-1, GR00T N1.5/N1.6/N1.7, VLA-JEPA) refine a noise
-                sample over T solver steps, following each checkpoint's schedule. BitVLA, OpenVLA-OFT, and VLA-Adapter
-                regress the chunk directly. Both paths return an action chunk through one interface.
-              </p>
-            </article>
-            <article>
-              <h3>Observation reuse</h3>
-              <p>
-                Prefix computation is independent of the changing action tokens, so its features and key/value
-                projections are cached once per observation and reused across solver steps. Model latency is
-                approximately P + T&middot;E. Graphs and buffers persist across requests of the same shape.
-              </p>
-            </article>
-            <article>
-              <h3>Self-contained bundles</h3>
-              <p>
-                GGUF stores weights, architecture metadata, and normalization statistics. A new policy adds an adapter,
-                a converter, and a runtime registration. Backend coverage depends on operator support and precision.
-              </p>
-            </article>
-            <article>
-              <h3>Ternary tensor-core kernel</h3>
-              <p>
-                BitVLA's ternary weights are packed four 2-bit codes per byte, and activations are quantized row-wise
-                to int8. The multi-row path uses IMMA tensor-core instructions in place of the <span class="mono">dp4a</span>
-                CUDA-core baseline.
-              </p>
-            </article>
-            <article>
-              <h3>Numerical validation</h3>
-              <p>
-                The prediction check fixes weights, images, tokens, state, noise, masks, and schedules, then reports the
-                maximum absolute and relative RMS error against reference actions. Intermediate tensor dumps localize
-                any discrepancy.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
+/* ---------------- teaser ----------------
+   One SVG (505.47 x 120.29 pt), shown as four crops so the panels can stack on narrow screens.
+   --x / --w are each panel's left edge and width in SVG units; --row is the width of one row. */
+.tz-row{display:flex;flex-wrap:wrap;justify-content:center;row-gap:1rem}
+.tz-p{--row:505.47;width:calc(var(--w) / var(--row) * 100%);overflow:hidden}
+figure .tz-p img{max-width:none;border-radius:0;width:calc(505.47 / var(--w) * 100%);
+  margin-left:calc(var(--x) / var(--w) * -100%)}
+@media (min-width:761px){ .tz-row{flex-wrap:nowrap} }
+@media (max-width:760px){ .tz-row{max-width:620px;margin:0 auto} .tz-p{--row:289} }
+@media (max-width:520px){ .tz-p{--row:165} }
 
-      <section class="section tinted" id="results">
-        <div class="container">
-          <h2>Leaderboard</h2>
-          <p class="section-intro">
-            All eleven supported models are evaluated on LIBERO-Object with 100 episodes per model, and profiled on
-            CUDA, Metal, and OpenVINO. Ten of the eleven reach success rates within 3.2 percentage points of their
-            reference. GR00T-N1.6 reaches 88% against 99% for its PyTorch reference, and the cause of this gap is still
-            unresolved. Incomplete episodes count as failures.
-          </p>
-          <div class="table-block">
-            <h3>LIBERO-Object: Eleven-Model Evaluation and Platform Profiles</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Model</th><th>Input / S</th><th>Success [95% CI]</th><th>Ref.</th><th>CUDA P90 / vision</th><th>CUDA GPU / host</th><th>Metal P90 / vision</th><th>Metal RSS</th><th>OV P90 / vision</th><th>OV RSS</th></tr>
-                </thead>
-                <tbody>
-                  <tr class="best-row"><td>VLA-JEPA</td><td>224/7</td><td>100 [96.3, 100]</td><td>99.6</td><td>64.2/22.3</td><td>3986/627</td><td>258.2/87.3</td><td>4034</td><td>151.2/55.3</td><td>3690</td></tr>
-                  <tr class="best-row"><td>BitVLA</td><td>224/8</td><td>100 [96.3, 100]</td><td>99.6</td><td>62.0/12.0</td><td>1312/1072</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
-                  <tr><td>GR00T-N1.7</td><td>256/16</td><td>99 [94.6, 99.8]</td><td>99.0*</td><td>93.8/21.7</td><td>6288/1417</td><td>385.0/87.3</td><td>7442</td><td>299.8/56.8</td><td>5890</td></tr>
-                  <tr><td>OpenVLA-OFT</td><td>224/8</td><td>97 [91.5, 99.0]</td><td>98.4</td><td>--</td><td>--</td><td>1719.9/194.0</td><td>15457</td><td>482.7/125.2</td><td>14040</td></tr>
-                  <tr><td>SmolVLA</td><td>512/1</td><td>96 [90.2, 98.4]</td><td>96.0</td><td>98.9/47.7</td><td>1322/735</td><td>330.6/186.3</td><td>1380</td><td>391.6/44.8</td><td>1069</td></tr>
-                  <tr><td>Evo-1</td><td>448/8</td><td>96 [90.2, 98.4]</td><td>97.7</td><td>180.0/56.6</td><td>1574/822</td><td>775.7/328.0</td><td>1620</td><td>585.7/183.6</td><td>1200</td></tr>
-                  <tr><td>&pi;0.5</td><td>224/10</td><td>96 [90.2, 98.4]</td><td>98.2</td><td>254.1/45.9</td><td>5938/729</td><td>1198.2/198.1</td><td>5987</td><td>568.1/37.7</td><td>5490</td></tr>
-                  <tr><td>VLA-Adapter</td><td>224/8</td><td>96 [90.2, 98.4]</td><td>99.2</td><td>82.1/44.1</td><td>2864/1063</td><td>332.4/189.1</td><td>3697</td><td>239.3/121.5</td><td>2590</td></tr>
-                  <tr><td>GR00T-N1.5</td><td>224/16</td><td>95 [88.8, 97.8]</td><td>95.0*</td><td>95.2/23.2</td><td>4830/1436</td><td>423.2/98.9</td><td>6841</td><td>249.1/28.3</td><td>5550</td></tr>
-                  <tr><td>GR00T-N1.6</td><td>224/16</td><td>88 [80.2, 93.0]</td><td>99.0*</td><td>91.3/23.8</td><td>5918/1441</td><td>389.9/99.8</td><td>7144</td><td>167.3/37.7</td><td>4480</td></tr>
-                  <tr><td>&pi;0</td><td>224/50</td><td>82 [73.3, 88.3]</td><td>79.0*</td><td>203.6/40.2</td><td>5480/833</td><td>1123.5/189.8</td><td>5530</td><td>779.6/83.9</td><td>5060</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">Success: percent with 95% Wilson interval, 100 episodes per model. Ref.: published rate, or our PyTorch reproduction (*). Input: image side length in pixels; S: executed actions per request. Timing: request P90 / vision-stage latency (ms). CUDA memory: device allocation / host RSS (MiB); Metal and OpenVINO (OV): RSS (MiB). Devices: RTX 3060, Apple M4, and Intel Arc iGPU. --: not measured.</p>
-          </div>
-          <div class="table-block">
-            <h3>All Four LIBERO Suites</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Suite</th><th>BitVLA</th><th>BitVLA ref.</th><th>GR00T-N1.7</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>Spatial</td><td>94.5 [90.4, 96.9]</td><td>97.4</td><td>96.0 [92.3, 98.0]</td></tr>
-                  <tr><td>Object</td><td>100 [98.1, 100]</td><td>99.6</td><td>98.0 [95.0, 99.2]</td></tr>
-                  <tr><td>Goal</td><td>92.5 [88.0, 95.4]</td><td>94.4</td><td>97.5 [94.3, 98.9]</td></tr>
-                  <tr><td>Long</td><td>83.5 [77.7, 88.0]</td><td>87.6</td><td>89.0 [83.9, 92.6]</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">Success (%) with 95% Wilson interval, 200 episodes per model per suite. On SimplerEnv WidowX, GR00T-N1.6 at 252-pixel input reaches 80% on "put carrot on plate" and 70% on "put spoon on towel".</p>
-          </div>
-          <div class="result-grid">
-            <article class="result-panel">
-              <h3>CPU and Metal</h3>
-              <p>
-                On an eight-thread i9-14900HX, the CPU backend returns actions in 2.1-9.0 s at 1.4-6.1 GiB peak RSS. On
-                an Apple M4, separate Metal trials reach 9/10 for SmolVLA, 8/10 for &pi;0, and 10/10 for GR00T-N1.7.
-              </p>
-              <dl class="mini-stats">
-                <div><dt>CPU SmolVLA</dt><dd>2141 ms</dd></div>
-                <div><dt>Metal GR00T-N1.7</dt><dd>539 ms, 10/10</dd></div>
-              </dl>
-            </article>
-            <article class="result-panel">
-              <h3>Intel GPUs (SYCL)</h3>
-              <p>
-                On an Intel Arc A380, SYCL cuts request latency against the Ryzen 5 host CPU. The maximum absolute
-                action difference from the CPU outputs is 2.9e-3, for actions of magnitude up to 0.99.
-              </p>
-              <dl class="mini-stats">
-                <div><dt>SmolVLA</dt><dd>1920 to 630 ms</dd></div>
-                <div><dt>Evo-1</dt><dd>7695 to 1176 ms</dd></div>
-                <div><dt>VLA-Adapter</dt><dd>2994 to 517 ms</dd></div>
-              </dl>
-            </article>
-          </div>
+/* ---------------- roofline ----------------
+   Drawn by assets/roofline.js: one inline SVG per device, so labels use the page's fonts. Teal
+   points are measured, as everywhere else; the roof and its labels are ink, the grid recessive. */
+.rf{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
+@media (max-width:760px){ .rf{grid-template-columns:1fr;max-width:520px;margin:0 auto} }
+.rf-p{position:relative;min-width:0}
+.rf-t{font-size:15px;font-weight:600;color:var(--ink);text-align:center;margin-bottom:2px}
+.rf-svg{display:block;width:100%;height:auto;overflow:visible;font-family:var(--sans)}
+.rf-mem{fill:var(--panel)}
+.rf-g{stroke:var(--line);stroke-width:1}
+.rf-g2{stroke:var(--line-soft);stroke-width:1}
+.rf-tick{font-size:11px;fill:var(--muted)}
+.rf-axis{font-size:12px;fill:var(--body)}
+.rf-reg{font-size:11px;fill:var(--muted);font-style:italic}
+.rf-ridge{stroke:var(--faint);stroke-width:1;stroke-dasharray:3 3}
+.rf-roof{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round}
+.rf-ceil{font-size:11px;fill:var(--ink)}
+.rf-pt{fill:var(--ours);stroke:#fff;stroke-width:1.5;pointer-events:none}
+.rf-hit{fill:transparent;outline:none}
+.rf-hit:focus-visible{stroke:var(--link);stroke-width:2}
+.rf-lab{font-size:11.5px;fill:var(--body);pointer-events:none}
+.rf-lead{stroke:var(--faint);stroke-width:1}
 
-          <div class="libero-video-block">
-            <div class="section-heading-row">
-              <div>
-                <h3>LIBERO Rollouts</h3>
-                <p>
-                  Example simulator rollouts produced by the vla.cpp runtime. These sit with the LIBERO leaderboard
-                  because they illustrate simulator behavior rather than real ALOHA-arm execution.
-                </p>
-              </div>
-            </div>
-            <div class="libero-video-grid">
-              <article class="libero-video-card">
-                <img src="assets/libero-videos/episode-000003.gif" alt="LIBERO rollout with carrot and bowl." loading="lazy">
-                <div>
-                  <h4>LIBERO rollout</h4>
-                </div>
-              </article>
-              <article class="libero-video-card">
-                <img src="assets/libero-videos/episode-000006.gif" alt="LIBERO rollout at a sink scene." loading="lazy">
-                <div>
-                  <h4>LIBERO rollout</h4>
-                </div>
-              </article>
-            </div>
-          </div>
+/* Execution-horizon chart (assets/horizon.js) shares the roofline's grid, text, point and tooltip
+   styles. Success is teal like every measured result; throughput is the neutral second series. */
+.hz{position:relative;max-width:620px;margin:0 auto}
+.hz-key{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 22px;font-size:13px;color:var(--body);
+  margin:0 0 6px}
+.hz-key>span{display:inline-flex;align-items:center;gap:7px}
+.hz-key svg{display:block}
+.hz-suc{fill:none;stroke:var(--ours);stroke-width:2;stroke-linejoin:round}
+.hz-err{stroke:var(--ours);stroke-width:1.5;opacity:.55}
+.hz-thr{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:6 4;stroke-linejoin:round}
+.hz-sq{fill:var(--muted);stroke:#fff;stroke-width:1.5}
+.rf-tip{position:absolute;z-index:3;pointer-events:none;transform:translate(-50%,-100%);opacity:0;
+  background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.08);
+  padding:6px 9px;font-size:12px;line-height:1.45;color:var(--body);text-align:left;white-space:nowrap;
+  transition:opacity .1s}
+.rf-tip.on{opacity:1}
+.rf-tip b{display:block;color:var(--ink);font-weight:600}
+.rf-tip span{display:block}
 
-        </div>
-      </section>
+/* ---------------- plain table ---------------- */
+.tbl{border-collapse:collapse;width:100%;font-size:14px;margin:1.3rem 0 0}
+.tbl thead th{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);text-align:left;padding:0 10px 7px 0;border-bottom:1px solid var(--line)}
+.tbl thead th.r{text-align:right;padding-right:0}
+.tbl tbody th{font-weight:400;color:var(--ink);text-align:left;padding:9px 10px 9px 0;
+  border-bottom:1px solid var(--line-soft)}
+.tbl td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line-soft)}
+.tbl td.r{font-family:var(--mono);font-size:13px;text-align:right;padding-right:0;white-space:nowrap}
+.tbl td.r b{color:var(--ours)}
+.tbl .note{font-size:13px;color:var(--muted)}
 
-      <section class="section" id="latency">
-        <div class="container">
-          <h2>Inference Latency</h2>
-          <p class="section-intro">
-            Seven models are compared on an RTX 3090 against eager PyTorch and <span class="mono">torch.compile</span>,
-            with checkpoint, precision, and inputs held fixed. Timings are the mean of 200 calls after warmup and
-            exclude transport. <span class="mono">vla.cpp</span> is 1.02-6.21x faster than eager execution.
-            Compilation closes much of that gap: against the faster PyTorch configuration, latency is similar for four
-            models and faster for SmolVLA, GR00T-N1.5, and BitVLA.
-          </p>
-          <div class="table-block">
-            <h3>Server-Side Latency vs. PyTorch (RTX 3090, ms)</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Model</th><th>vla.cpp</th><th>Eager</th><th>Compile</th><th>Speedup</th></tr>
-                </thead>
-                <tbody>
-                  <tr class="best-row"><td>BitVLA</td><td>51.5</td><td>319.7</td><td>94.6</td><td>1.84x</td></tr>
-                  <tr><td>GR00T-N1.5</td><td>75.4</td><td>100.5</td><td>94.7</td><td>1.26x</td></tr>
-                  <tr><td>SmolVLA</td><td>55.8</td><td>174.1</td><td>65.9</td><td>1.18x</td></tr>
-                  <tr><td>&pi;0</td><td>97.9</td><td>99.4</td><td>99.7</td><td>1.02x</td></tr>
-                  <tr><td>Evo-1</td><td>142.3</td><td>161.6</td><td>142.5</td><td>1.00x</td></tr>
-                  <tr><td>GR00T-N1.6</td><td>61.2</td><td>76.0</td><td>61.1</td><td>1.00x</td></tr>
-                  <tr><td>GR00T-N1.7</td><td>59.9</td><td>66.1</td><td>60.1&dagger;</td><td>1.00x</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">Speedup: the faster PyTorch latency divided by vla.cpp latency. Compile uses PyTorch default mode. &dagger; eager fallback enabled via <span class="mono">suppress_errors</span>.</p>
-          </div>
+/* ---------------- video grid ---------------- */
+.grid{display:grid;gap:1.2rem;margin-top:1.2rem}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g1{grid-template-columns:1fr;max-width:640px;margin-left:auto;margin-right:auto}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:760px){ .g4{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:760px){ .g3,.g2{grid-template-columns:1fr;max-width:520px;margin-left:auto;margin-right:auto} }
 
-          <div class="result-grid">
-            <article class="result-panel">
-              <h3>TensorRT comparison</h3>
-              <p>
-                A matched GR00T-N1.7 comparison on an RTX PRO Blackwell 1000 favors TensorRT, at 70.5 ms median against
-                130.2 ms, a 1.85x difference, with 98/100 and 96/100 successes. TensorRT is the faster option for this
-                configuration; <span class="mono">vla.cpp</span> instead offers one implementation across processor backends.
-              </p>
-            </article>
-            <article class="result-panel">
-              <h3>Where the time goes</h3>
-              <p>
-                On an RTX 5070, vision plus backbone take 52% of execution time for SmolVLA (T=10), 52% for GR00T-N1.6 (T=4),
-                75% for &pi;0 (T=10), and about 99.5% for the direct-head BitVLA. Even with cached observation
-                features, the action expert takes nearly half the time for SmolVLA and GR00T-N1.6.
-              </p>
-            </article>
-          </div>
+.vid{display:flex;flex-direction:column}
+.ph{position:relative;aspect-ratio:16/9;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ph.sq{aspect-ratio:1/1}
+.ph video{display:none;width:100%;height:100%;object-fit:cover;background:#000}
+.ph.has-video{border-color:var(--line);background:#000}
+.ph.has-video video{display:block}
+.ph.has-video .phin{display:none}
+.phin{text-align:center;padding:14px;width:100%}
+.phin .play{width:38px;height:38px;margin:0 auto 9px;border-radius:50%;
+  border:1.5px solid var(--faint);display:flex;align-items:center;justify-content:center}
+.phin .play::after{content:"";border-left:10px solid var(--faint);
+  border-top:6.5px solid transparent;border-bottom:6.5px solid transparent;margin-left:3px}
+.phin .lbl{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:5px}
+.phin .file{font-family:var(--mono);font-size:10.5px;color:var(--faint);word-break:break-all;
+  line-height:1.45;display:block}
 
-          <div class="table-block">
-            <h3>Solver-Step Sweep: GR00T-N1.7 on RTX 3060</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>T</th><th>Success (vla.cpp / PyTorch)</th><th>Vision (ms)</th><th>Backbone + head (ms)</th><th>Rel. RMS vs. T=4</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>1</td><td>99 / 96</td><td>18.49</td><td>19.60</td><td>.2290</td></tr>
-                  <tr><td>2</td><td>95 / 98</td><td>18.83</td><td>25.79</td><td>.0684</td></tr>
-                  <tr><td>4</td><td>98 / 94</td><td>18.68</td><td>37.21</td><td>0</td></tr>
-                  <tr><td>8</td><td>98 / 95</td><td>18.68</td><td>60.54</td><td>.0321</td></tr>
-                  <tr><td>16</td><td>95 / 97</td><td>18.86</td><td>107.50</td><td>.0483</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">Success in %, 100 episodes per stack and setting. Vision time stays flat while backbone-plus-head time fits 13.9 + 5.8T ms, which puts total cost at about 32.6 ms fixed plus 5.8 ms per solver step. Client-side fits are about 54 + 6.2T ms for vla.cpp and 67 + 7.3T ms for PyTorch.</p>
-          </div>
+.vmeta{padding-top:.7rem}
+.vmeta .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.tag{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:#fff;background:var(--ink);padding:2.5px 8px;border-radius:4px;white-space:nowrap}
+.tag.ours{background:var(--ours)}
+.tag.ctl{background:#fff;color:var(--muted);border:1px solid var(--line)}
+.sr{font-size:1.25rem;font-weight:600;color:var(--ink);white-space:nowrap}
+.sr small{font-size:12px;font-weight:400;color:var(--muted)}
+.sr.bad{color:var(--bad);font-size:1rem}
+.instr{font-size:1rem;margin:.45rem 0 .2rem;color:var(--ink)}
+.vmeta .sub{font-size:13px;color:var(--muted);line-height:1.5}
 
-          <figure class="figure">
-            <img
-              src="assets/roofline.png"
-              alt="Roofline plots of estimated arithmetic intensity and throughput for VLA models on RTX 3060 and Jetson AGX Orin."
-              width="2700"
-              height="1160"
-            >
-            <figcaption>
-              Estimated arithmetic intensity and throughput. Compute ceilings are measured GEMM rates of 25.6 and 21.3
-              TFLOP/s; bandwidth ceilings are 360 and 204.8 GB/s for RTX 3060 and AGX Orin. Prefix intensity estimates
-              (256-530 FLOPs/byte) exceed the ridge points, while the action expert sits near 50.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
+.scene{background:var(--panel);border-radius:var(--r);padding:.9rem 1.1rem;font-size:15px;
+  color:var(--body);margin:1.2rem 0 0}
+.scene b{color:var(--ink)}
 
-      <section class="section tinted" id="memory">
-        <div class="container">
-          <h2>Memory and Edge Deployment</h2>
-          <p class="section-intro">
-            Memory capacity decides which policies can run onboard. The smallest target is an 8 GB Jetson Orin Nano,
-            where the CPU and GPU share memory with the OS, cameras, and the rest of the robot stack. Five of the seven
-            models in the device study load on the Nano.
-          </p>
-          <div class="table-block">
-            <h3>Seven-Model Device Study</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Model</th><th>S</th><th>RTX 3060</th><th>AGX Orin</th><th>Orin Nano</th><th>Nano RSS</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>SmolVLA</td><td>4</td><td>28.16 / 181</td><td>65.41 / 181</td><td>141.81 / 176</td><td>2031</td></tr>
-                  <tr class="best-row"><td>BitVLA</td><td>8</td><td>37.85 / 200</td><td>101.11 / 200</td><td>355.65 / 200</td><td>2199</td></tr>
-                  <tr><td>Evo-1</td><td>8</td><td>63.60 / 189</td><td>131.01 / 191</td><td>458.84 / 195</td><td>2135</td></tr>
-                  <tr><td>GR00T-N1.5</td><td>16</td><td>14.17 / 192</td><td>28.78 / 195</td><td>84.76 / 192&dagger;</td><td>5975</td></tr>
-                  <tr><td>&pi;0</td><td>32/50</td><td>9.74 / 175</td><td>27.90 / 171</td><td>39.10 / 161&dagger;</td><td>6068</td></tr>
-                  <tr><td>GR00T-N1.6</td><td>16</td><td>10.29 / 173</td><td>26.70 / 180</td><td>OOM</td><td>--</td></tr>
-                  <tr><td>GR00T-N1.7</td><td>16</td><td>10.26 / 196</td><td>26.84 / 197</td><td>OOM</td><td>--</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">Each platform cell gives client inference time per executed action, L/S (ms, including preprocessing and transport), followed by successes out of 200. &pi;0 uses S=32 on RTX and AGX and S=50 on the Nano. RSS: Nano process peak memory (MiB). &dagger; simulator offloaded to another machine. OOM: out of memory.</p>
-          </div>
+/* ================= model x backend explorer ================= */
+.xp{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:1.6rem}
+.xp-b{display:inline-block;font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;padding:1px 5px;margin:6px 4px 0 0;border-radius:3px}
+.xp-b.cuda{background:#eaf1fb;color:var(--link)}
+.xp-b.rocm{background:#fdeeea;color:#b4441f}
+.xp-b.metal{background:#efeaf7;color:#6b46a8}
+.xp-b.ov,.xp-b.sycl{background:#e9f1ef;color:var(--ours)}
+.xp-b.npu{background:#f4efe2;color:#7a5c12}
+.xp-b.cpu{background:#efefef;color:var(--muted)}
 
-          <div class="memory-grid">
-            <article class="memory-card">
-              <span class="card-kicker">BitVLA bundle</span>
-              <strong>1.34 GiB</strong>
-              <p>
-                Packing ternary weights shrinks the model file from 5.6 GiB, and cuts transient host allocation during
-                loading from 11.1 to 1.15 GiB.
-              </p>
-            </article>
-            <article class="memory-card">
-              <span class="card-kicker">Desktop device memory</span>
-              <strong>1312 MiB</strong>
-              <p>
-                BitVLA device allocation on the RTX 3060. On the Nano, process peak RSS is 2199 MiB, and peak system use
-                rises 4533 MiB over baseline, a figure that includes the surrounding workload.
-              </p>
-            </article>
-            <article class="memory-card">
-              <span class="card-kicker">Nano coverage</span>
-              <strong>5 / 7</strong>
-              <p>
-                GR00T-N1.6/N1.7 exceed the available memory. GR00T-N1.5 and &pi;0 fit only with the simulator on another machine.
-              </p>
-            </article>
-          </div>
+/* The matrix: devices down, models across, each measured cell shaded by its p50. One teal,
+   six log-spaced steps, darker is faster; white text on the two darkest. */
+.xp-matrix{padding:16px 18px 18px;background:var(--panel);border-bottom:1px solid var(--line);
+  overflow-x:auto}
+.xp-mgrid{display:grid;grid-template-columns:minmax(148px,168px) repeat(13,minmax(42px,1fr));
+  gap:2px;min-width:720px}
+.xp-mc{position:sticky;left:0;z-index:1;background:var(--panel)}
+.xp-mh{font-family:var(--sans);font-size:9.5px;line-height:1.15;color:var(--muted);text-align:center;
+  padding:0 1px 6px;background:none;border:0;cursor:pointer;align-self:end}
+.xp-mh:hover{color:var(--link)}
+.xp-mh.on{color:var(--ink);font-weight:700}
+.xp-mg{grid-column:1/-1;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);padding:9px 0 2px}
+.xp-mr{position:sticky;left:0;z-index:1;display:flex;align-items:center;gap:6px;min-width:0;
+  padding:0 8px 0 0;background:var(--panel);border:0;cursor:pointer;font-family:var(--sans);
+  text-align:left;white-space:nowrap;overflow:hidden}
+.xp-mr b{font-size:12px;font-weight:400;color:var(--body)}
+.xp-mr span{font-size:10px;color:var(--muted)}
+.xp-mr:hover b{color:var(--link)}
+.xp-mr.on b{color:var(--ink);font-weight:600}
+.xp-c{display:block;height:21px;width:100%;padding:0;border-radius:2px;cursor:pointer;
+  border:1px solid transparent;font-family:var(--mono);font-size:10px;line-height:19px;
+  text-align:center;color:var(--ink);white-space:nowrap;overflow:hidden}
+.xp .b0{background:#005B54}
+.xp .b1{background:#0D8077}
+.xp .b2{background:#5AB7AD}
+.xp .b3{background:#8FD3CB}
+.xp .b4{background:#B8E8E1}
+.xp .b5{background:#DEF6F3}
+.xp-c.b0,.xp-c.b1{color:#fff}
+.xp-c.mo{font-style:italic}
+.xp-c.s-na,.xp-c.s-nr{background:#fff;border:1px dashed var(--line);color:var(--muted)}
+.xp-c.s-oom,.xp-c.s-big{background:#f6d7d7;border-color:#e9b6b6;color:var(--bad)}
+.xp-c.s-big{font-size:9px}
+.xp-c.s-fail{background:#fff;border-color:#e9b6b6;color:var(--bad)}
+.xp-c:hover,.xp-c.sel{position:relative;z-index:2;outline:2px solid var(--link);outline-offset:1px}
+.xp-key{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 28px;margin:14px 0 0}
+.xp-scale6{width:236px}
+.xp-ramp{display:flex;gap:1px;height:10px;border-radius:2px;overflow:hidden}
+.xp-ramp span{flex:1}
+.xp-rampt{position:relative;height:15px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.xp-rampt span{position:absolute;top:2px;transform:translateX(-50%)}
+.xp-leg{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px 15px;
+  font-size:11.5px;color:var(--muted);flex:1 1 360px}
+.xp-leg li{display:flex;align-items:center;gap:5px}
+.xp-leg .xp-c{display:inline-block;width:auto;min-width:34px;height:19px;line-height:17px;
+  padding:0 4px;cursor:default;font-style:normal}
+.xp-leg .xp-c.mo{font-style:italic}
+.xp-leg .xp-c:hover{outline:0}
+.xp-cap{font-size:11.5px;color:var(--muted);line-height:1.5;margin:10px 0 0;max-width:80ch}
 
-          <div class="result-grid">
-            <article class="result-panel">
-              <h3>IMMA tensor-core kernel</h3>
-              <p>
-                Replacing BitVLA's <span class="mono">dp4a</span> path with IMMA tensor-core instructions reduces client
-                inference time per executed action by 4.57x on RTX 3060 and 4.02x on AGX Orin at S=8. Task success
-                stays at 100%. Compact storage lowers the loading footprint; tensor-core execution lowers inference time.
-              </p>
-              <dl class="mini-stats">
-                <div><dt>RTX 3060</dt><dd>172.8 to 37.85 ms</dd></div>
-                <div><dt>AGX Orin</dt><dd>406.6 to 101.11 ms</dd></div>
-              </dl>
-            </article>
-            <article class="result-panel">
-              <h3>GGUF quantization</h3>
-              <p>
-                For GR00T-N1.7, the most compact file (Q4_0 with the vision tower also quantized) is 4556 MB against
-                6292 MB for BF16, with a 1.144x fixed-input speedup and 195/200 successes. Fixed-input error alone does
-                not predict task success.
-              </p>
-            </article>
-          </div>
-          <div class="table-block">
-            <h3>GR00T-N1.7 Quantization (RTX 3060)</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Weights</th><th>File (MB)</th><th>Speedup</th><th>Rel. RMS</th><th>Success</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>BF16</td><td>6292.4</td><td>1.000x</td><td>0</td><td>196/200</td></tr>
-                  <tr><td>Q8_0</td><td>5537.4</td><td>1.077x</td><td>.0043</td><td>197/200</td></tr>
-                  <tr><td>Q4_0</td><td>5134.8</td><td>1.081x</td><td>.0480</td><td>190/200</td></tr>
-                  <tr><td>Q8_0 + V</td><td>5160.0</td><td>1.131x</td><td>.0050</td><td>195/200</td></tr>
-                  <tr><td>Q4_0 + V</td><td>4556.0</td><td>1.144x</td><td>.0490</td><td>195/200</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">LIBERO-Object, 200 episodes per configuration, S=16. Speedup and relative RMS use fixed inputs; the error compares 5280 action values against BF16. +V also quantizes the vision tower.</p>
-          </div>
-        </div>
-      </section>
+.xp-main{display:grid;grid-template-columns:274px 1fr}
+.xp-model{border-right:1px solid var(--line);padding:16px 16px 18px;min-width:0}
+.xp-mname{font-size:19px;font-weight:600;color:var(--ink);line-height:1.2}
+.xp-mhead{font-size:12px;color:var(--muted);margin-top:2px}
+.xp-sec{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin:16px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.xp-scale{margin-bottom:9px}
+.xp-track{position:relative;height:10px;background:var(--panel);border-radius:2px;overflow:hidden}
+.xp-fill{position:absolute;top:0;bottom:0;left:0;background:var(--ours);opacity:.85}
+.xp-whisk{position:relative;height:9px;margin-top:1px}
+.xp-whisk span{position:absolute;top:3px;height:3px;background:#a9cdc9;border-radius:2px}
+.xp-whisk span::before,.xp-whisk span::after{content:"";position:absolute;top:-3px;width:2px;
+  height:9px;background:#7fb5b0}
+.xp-whisk span::before{left:0}
+.xp-whisk span::after{right:0}
+.xp-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;
+  color:var(--faint);margin-top:1px}
+.xp-slg{font-size:11px;line-height:1.45;color:var(--muted);margin:5px 0 0}
+.xp-kv{border-collapse:collapse;width:100%;font-size:13px}
+.xp-kv td{padding:4px 0;vertical-align:baseline}
+.xp-kv td:first-child{color:var(--muted);white-space:nowrap;padding-right:10px}
+.xp-kv td:last-child{text-align:right;color:var(--ink)}
+.xp-num{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.xp-num.ours{color:var(--ours);font-weight:600}
+.xp-dim{color:var(--muted);font-weight:400}
+.xp-note{font-size:12px;line-height:1.55;color:var(--muted);margin:14px 0 0}
+.xp-fn{font-size:11.5px;line-height:1.55;color:var(--muted);margin:12px 0 0}
+.xp-num.bad{color:var(--bad);font-weight:600}
+.xp-nm{font-size:12.5px;color:var(--muted);font-style:italic;margin:0}
+.xp-nm.bad{color:var(--bad);font-style:normal}
+.xp-sub{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin:14px 0 4px}
+.xp-flags{margin:0 0 2px}
+.xp-suites{border-collapse:collapse;width:100%;table-layout:fixed}
+.xp-suites th{font-size:10.5px;font-weight:400;color:var(--muted);text-align:right;padding:0 0 2px}
+.xp-suites td{text-align:right;color:var(--ink);padding:0}
+.xp-flags code{white-space:normal;font-size:11.5px}
 
-      <section class="section" id="precision">
-        <div class="container">
-          <h2>Positional-Index Precision</h2>
-          <p class="section-intro">
-            SmolVLA shows how a small implementation difference can change policy behavior. Its vision encoder maps
-            patch coordinates to discrete indices that select learned position embeddings. Computing those coordinates
-            at a different precision can push a value across an index boundary and select a different embedding.
-          </p>
-          <div class="memory-grid">
-            <article class="memory-card">
-              <span class="card-kicker">Position-embedding error</span>
-              <strong>0.32 to 0.003</strong>
-              <p>Relative error after matching the half-precision reference computation.</p>
-            </article>
-            <article class="memory-card">
-              <span class="card-kicker">Action difference</span>
-              <strong>1.97 to &lt;0.01</strong>
-              <p>The maximum difference sits on the gripper channel and is large enough to reverse the gripper command.</p>
-            </article>
-            <article class="memory-card">
-              <span class="card-kicker">LIBERO-Object task 0</span>
-              <strong>2/10 to 9/10</strong>
-              <p>Success on placing a soup container in a basket, once index precision matches the reference.</p>
-            </article>
-          </div>
-          <p class="note">
-            Numerical validation must therefore cover discrete preprocessing decisions as well as floating-point network
-            operations. On Metal, running the vision and language towers in 32-bit cuts the fixed-input action discrepancy
-            from 2.0e-3 to 8.3e-5, at a cost of 33 ms and 672 MiB.
-          </p>
-        </div>
-      </section>
+.xp-cands{padding:16px 18px 18px;min-width:0;overflow-x:auto}
+.xp-dhead{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;margin-bottom:10px}
+.xp-dhead b{font-size:16px;font-weight:600;color:var(--ink)}
+.xp-dhead .xp-b{margin:0}
+.xp-dhead span{flex-basis:100%;font-size:12px;color:var(--muted)}
+.xp-cands table{border-collapse:collapse;width:100%;font-size:13px}
+.xp-cands thead th{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);text-align:right;padding:0 8px 6px 0;border-bottom:1px solid var(--line);
+  white-space:nowrap}
+.xp-cands thead th:first-child{text-align:left}
+.xp-u{font-weight:400;text-transform:none;letter-spacing:0}
+.xp-cands tbody th{font-size:13px;font-weight:400;color:var(--ink);text-align:left;
+  padding:8px 8px 8px 0;white-space:nowrap}
+.xp-cands td{padding:8px 8px 8px 0;border-bottom:1px solid var(--line-soft);text-align:right}
+.xp-cands tbody th{border-bottom:1px solid var(--line-soft)}
+.xp-cands tbody tr{cursor:pointer}
+.xp-cands tbody tr:hover td,.xp-cands tbody tr:hover th{background:var(--panel)}
+.xp-cands tr.xp-sel td,.xp-cands tr.xp-sel th{background:#eaf1fb}
+.xp-cands tr.xp-none td{color:var(--muted);font-style:italic;font-size:12.5px;text-align:left}
+.xp-cands tr.xp-none th{color:var(--muted)}
+.xp-barh{width:74px}
+.xp-bar{width:74px;padding-right:0!important}
+.xp-bar span{display:block;height:7px;border-radius:2px;background:var(--faint);min-width:2px}
+.xp-sel .xp-bar span{background:var(--link)}
 
-      <section class="section tinted" id="robots">
-        <div class="container">
-          <h2>Physical Deployment and Execution Horizon</h2>
-          <p class="section-intro">
-            The runtime drives a UR10e manipulator and an ALOHA robot with synchronous chunked control: the client
-            executes S actions from each chunk, then waits for the next prediction.
-          </p>
+.xp-foot{border-top:1px solid var(--line);padding:14px 18px;display:flex;flex-wrap:wrap;
+  align-items:baseline;gap:8px 14px}
+.xp-verdict{font-size:14px;flex:1 1 320px;min-width:0}
+.xp-verdict b{font-size:17px;font-weight:600;color:var(--ink)}
+.xp-vsub{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px}
+.xp-vnote{display:block;font-size:12px;color:var(--muted);line-height:1.5;margin-top:7px}
+.xp-sort{display:flex;border:1px solid var(--line);border-radius:290486px;overflow:hidden}
+.xp-sort button{font-family:var(--sans);font-size:11.5px;padding:5px 12px;background:#fff;
+  border:0;cursor:pointer;color:var(--muted)}
+.xp-sort button[aria-pressed="true"]{background:var(--ink);color:#fff}
 
-          <figure class="figure">
-            <img
-              src="assets/ur10e.jpg"
-              alt="UR10e cup pick-and-place task in three stages: pick up the cup, move to the box, drop the cup down."
-              width="2070"
-              height="577"
-            >
-            <figcaption>
-              UR10e cup pick-and-place with SmolVLA fine-tuned on 80 demonstrations. All 80 evaluated rollouts grasp
-              the cup and carry it to the basket; every failure happens at release.
-            </figcaption>
-          </figure>
-          <div class="table-block">
-            <h3>UR10e Deployment Across Backends (SmolVLA)</h3>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Backend</th><th>Round trip (ms)</th><th>Success [95% CI]</th><th>Effective rate</th></tr>
-                </thead>
-                <tbody>
-                  <tr class="best-row"><td>CUDA, RTX 5070 laptop</td><td>111.4</td><td>15/20 [53.1, 88.8]</td><td>17.7 Hz</td></tr>
-                  <tr><td>Metal, Mac Mini M4</td><td>582.0</td><td>12/20 [38.7, 78.1]</td><td>12.8 Hz</td></tr>
-                  <tr><td>CPU, i9-14900HX</td><td>2164.4</td><td>12/20 [38.7, 78.1]</td><td>7.1 Hz</td></tr>
-                  <tr><td>CPU, Ryzen 7 6850HS</td><td>3652.9</td><td>14/20 [48.1, 85.5]</td><td>5.0 Hz</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="note">S=25 actions at 20 Hz, 20 episodes per backend. Rate counts executed actions per wall-clock second. Metal and Ryzen include about 161 ms of network time; Metal runs the vision and language computations in FP32. Round-trip latency varies 33x, and the share of wall time blocked on prediction grows from 8% to 73%.</p>
-          </div>
+footer{margin-top:3.5rem;border-top:1px solid var(--line);padding:1.6rem 0 3.5rem;
+  font-size:14px;color:var(--muted);text-align:center}
+footer p{margin:.4rem 0}
 
+@media (max-width:760px){
+  .xp-main{grid-template-columns:1fr}
+  .xp-model{border-right:0;border-bottom:1px solid var(--line)}
+  .xp-cands{padding:14px}
+  .xp-matrix{padding:14px}
+  .xp-barh,.xp-bar{width:48px}
+}
+@media (max-width:560px){
+  .wrap{padding:0 18px}
+  header{padding-top:2.5rem}
+  h2{font-size:1.6rem}
+  h3{font-size:1.25rem}
+  .punch{font-size:1.1rem}
+}
+</style>
+</head>
+<body>
 
-          <section class="aloha-benchmark" id="aloha-evidence" aria-labelledby="aloha-title">
-            <div class="section-heading-row">
-              <div>
-                <h3 id="aloha-title">ALOHA Deployment</h3>
-                <p>
-                  GR00T-N1.6 runs on an embedded Jetson AGX Orin and drives the ALOHA left arm on two tabletop tasks,
-                  with 20 trials per task.
-                </p>
-              </div>
-            </div>
+<div class="wrap">
 
-            <div class="task-definition-grid" aria-label="ALOHA task definitions">
-              <article>
-                <figure class="setup-frame">
-                  <img src="assets/aloha-setup/task1.jpeg" alt="task 1 ALOHA setup with colored blocks and a white box on the table.">
-                </figure>
-                <span>task 1</span>
-                <p>pick up all blocks on the table and place them into the white box.</p>
-              </article>
-              <article>
-                <figure class="setup-frame">
-                  <img src="assets/aloha-setup/task2.jpeg" alt="task 2 ALOHA setup with trash, banana, box, and white dish on the table.">
-                </figure>
-                <span>task 2</span>
-                <p>pick up the trash and place it into the box, then pick up the banana and place it on the white dish.</p>
-              </article>
-            </div>
+<header>
+  <h1><span class="eng">vla.cpp</span>: A Unified Inference Runtime for
+  Vision&ndash;Language&ndash;Action Models</h1>
+  <p class="punch">Thirteen vision&ndash;language&ndash;action policies, one C++ runtime, seven
+  backends &mdash; from a desktop GPU down to an 8&nbsp;GB Jetson, with no PyTorch at inference
+  time.</p>
 
-            <div class="aloha-highlight-grid">
-              <article class="aloha-highlight">
-                <span>task 1 success</span>
-                <strong>18/20</strong>
-                <p>blocks into the white box, about 49 s per completion</p>
-              </article>
-              <article class="aloha-highlight">
-                <span>task 2 success</span>
-                <strong>17/20</strong>
-                <p>trash into the box, banana onto the dish, about 28 s per completion</p>
-              </article>
-              <article class="aloha-highlight">
-                <span>inference per chunk</span>
-                <strong>~470 ms</strong>
-                <p>GR00T-N1.6 on AGX Orin</p>
-              </article>
-              <article class="aloha-highlight">
-                <span>chunked control</span>
-                <strong>H=8, S=7</strong>
-                <p>1.3 s replan period</p>
-              </article>
-            </div>
+  <nav class="links">
+    <a class="btn soon" href="#"><span class="ic">▣</span> Paper</a>
+    <a class="btn soon" href="#"><span class="ic">◨</span> Code</a>
+    <a class="btn" href="#explorer"><span class="ic">◈</span> Model &times; backend explorer</a>
+    <a class="btn" href="#robot"><span class="ic">▶</span> Robot videos</a>
+  </nav>
 
-            <div class="video-evidence-panel">
-              <div class="section-heading-row">
-                <div>
-                  <h3>ALOHA Experiment Videos</h3>
-                  <p>
-                    Each page shows one vla.cpp trial: the setup image plus the external overview, left-wrist, and
-                    high camera videos.
-                  </p>
-                </div>
-                <span id="evidence-count" class="evidence-count">0 trials</span>
-              </div>
-              <div class="evidence-filters" aria-label="Evidence filters">
-                <label>
-                  task
-                  <select id="filter-task">
-                    <option value="all">all tasks</option>
-                    <option value="Task 1">task 1</option>
-                    <option value="Task 2">task 2</option>
-                  </select>
-                </label>
-                <label>
-                  result
-                  <select id="filter-result">
-                    <option value="all">all results</option>
-                    <option value="PASS">pass</option>
-                    <option value="FAIL">fail</option>
-                  </select>
-                </label>
-                <label>
-                  setup
-                  <select id="filter-setup">
-                    <option value="all">all setups</option>
-                    <option value="Setup 1">setup 1</option>
-                    <option value="Setup 2">setup 2</option>
-                    <option value="Setup 3">setup 3</option>
-                    <option value="Setup 4">setup 4</option>
-                    <option value="Setup 5">setup 5</option>
-                  </select>
-                </label>
-              </div>
-              <div id="evidence-gallery" class="evidence-gallery" aria-live="polite"></div>
-              <div class="evidence-pagination" aria-label="Evidence pagination">
-                <button id="evidence-prev" class="pager-button" type="button">previous</button>
-                <span id="evidence-page" class="pager-status">page 1 of 1</span>
-                <button id="evidence-next" class="pager-button" type="button">next</button>
-              </div>
-            </div>
-          </section>
+  <p class="notice" role="note"><b>Updated since submission.</b> This page describes
+  <code>vla.cpp</code> as it is now, not as in the submitted paper: thirteen models instead of
+  eleven, seven backends instead of five, and newer LIBERO and latency measurements. Counts and
+  numbers here, including in the teaser figure, can therefore differ from the paper&rsquo;s.
+  Last updated October 2026.</p>
+</header>
 
-          <div class="result-grid">
-            <article class="result-panel">
-              <h3>Controlled delay injection</h3>
-              <p>
-                To separate inference delay from hardware and precision, an artificial delay is inserted after
-                GR00T-N1.7 inference on an RTX 4070 and before each chunk reaches ALOHA. Across delays from 0 to 2000 ms,
-                success stays at 9/10 or 10/10 (ten episodes per condition), and executed steps do not rise monotonically.
-              </p>
-              <dl class="mini-stats">
-                <div><dt>0 / 150 / 330 ms</dt><dd>10/10 each</dd></div>
-                <div><dt>530 / 1000 ms</dt><dd>9/10 each</dd></div>
-                <div><dt>2000 ms</dt><dd>10/10</dd></div>
-              </dl>
-            </article>
-            <article class="result-panel">
-              <h3>Execution horizon in simulation</h3>
-              <p>
-                SmolVLA on LIBERO-Object (Orin Nano, H=50, 50 episodes per setting) peaks at 49/50 with S=16. It falls to
-                19/50 at S=50, where the robot executes the whole chunk before observing again. A larger S spreads
-                inference over more actions but delays feedback, so runtime comparisons should report both S and T.
-              </p>
-              <dl class="mini-stats">
-                <div><dt>S=16</dt><dd>98%, 35.8 Hz</dd></div>
-                <div><dt>S=50</dt><dd>38%, 109.4 Hz</dd></div>
-              </dl>
-            </article>
-          </div>
+<!-- ============================== teaser ============================== -->
+<section id="teaser">
+  <figure>
+    <div class="tz-row">
+      <div class="tz-p" style="--x:0;--w:165"><img src="assets/teaser.svg" alt="(a) Shared runtime and model format: the vla.cpp C++ server with GGUF weights serves 13 VLA models (SmolVLA, Evo-1, π0, π0.5, Octo-Small, GR00T-N1.5, N1.6 and N1.7, VLA-JEPA, TurboVLA, VLA-Adapter, OpenVLA-OFT, BitVLA) through 7 backends (CUDA, ROCm, Metal, CPU, SYCL, OpenVINO, Hexagon) on RTX 30xx–50xx, Radeon RX 9060 XT and Arc A380 GPUs, Apple M4, Core Ultra iGPU and NPU, Snapdragon X CPU and NPU, desktop CPUs, and Jetson AGX Orin, Orin NX and Orin Nano."></div>
+      <div class="tz-p" style="--x:165;--w:122.75"><img src="assets/teaser.svg" alt="(b) Task success vs. reference: vla.cpp LIBERO-Object success from the latest 200-episode run plotted against the reference rate. Eight of eleven models lie within 4 points of parity; SmolVLA (89.5% vs. 96%), GR00T-N1.6 (86.5% vs. 99%) and π0 (72% vs. 79%) fall below it. BitVLA and VLA-JEPA reach 100%."></div>
+      <div class="tz-p" style="--x:287.75;--w:99.25"><img src="assets/teaser.svg" alt="(c) Ternary execution: BitVLA milliseconds per executed action, dp4a against the IMMA tensor-core kernel. RTX 3060: 172.8 vs. 37.9 ms (4.6×). AGX Orin: 406.6 vs. 101.1 ms (4.0×)."></div>
+      <div class="tz-p" style="--x:387;--w:118.47"><img src="assets/teaser.svg" alt="(d) On the robot: UR10e task success with 95% intervals against round-trip latency. CUDA 75% at 111 ms (17.7 Hz), Metal 60% at 582 ms, CPU i9 60% at 2164 ms, CPU Ryzen 70% at 3653 ms (5.0 Hz): a 33× latency range."></div>
+    </div>
+    <figcaption><b><code>vla.cpp</code> across models and hardware.</b> (a) Shared runtime components
+      support thirteen VLA models on seven backends; backend coverage varies by model. (b)
+      LIBERO-Object success over 200 episodes per model, from the latest run on an RTX&nbsp;3090,
+      against published rates or PyTorch reproductions (&pi;<sub>0</sub> and GR00T); the shaded band
+      marks &plusmn;4 percentage points. All three models outside it replay a different number of
+      actions per chunk than their upstream evaluations. Octo-Small (8%) and TurboVLA (100%) have no
+      reference rate and are not plotted. (c) Tensor-core execution reduces BitVLA&rsquo;s client
+      inference time per executed action by 4.0&ndash;4.6&times; at <i>S</i>&nbsp;=&nbsp;8. (d)
+      UR10e task success and 95% Wilson intervals across four backends; round-trip latency varies
+      by 33&times;. Panels (a) and (b) are updated since submission; (c) and (d) are as
+      submitted.</figcaption>
+  </figure>
+</section>
 
-          <figure class="figure">
-            <img
-              src="assets/replan-sweep.png"
-              alt="SmolVLA execution-horizon sweep: task success and inference throughput against executed steps per inference call."
-              width="1260"
-              height="696"
-            >
-            <figcaption>
-              SmolVLA execution-horizon sweep on Orin Nano. Error bars are 95% Wilson intervals. Throughput S/L excludes
-              action execution and transport.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
+<!-- ============================== abstract ============================== -->
+<section id="abstract">
+  <p class="bk-h" id="bk-h">Supported backends</p>
+  <ul class="bk" aria-labelledby="bk-h">
+    <li class="cuda"><b>CUDA</b> NVIDIA</li>
+    <li class="rocm"><b>ROCm</b> AMD</li>
+    <li class="npu"><b>Hexagon</b> Qualcomm</li>
+    <li class="ov"><b>OpenVINO / SYCL</b> Intel</li>
+    <li class="metal"><b>Metal</b> Apple</li>
+    <li class="cpu"><b>CPU</b> x86-64 / Arm</li>
+  </ul>
+  <h2>Abstract</h2>
+  <p class="abstract">Deploying vision&ndash;language&ndash;action (VLA) models on robots requires
+  adapting model-specific inference pipelines to heterogeneous processors and limited onboard
+  memory. We present <code>vla.cpp</code>, a unified C++ inference runtime for thirteen VLA models.
+  The runtime shares model loading, tensor execution, and serving while retaining
+  architecture-specific attention, conditioning, and action heads. Iterative policies reuse
+  observation-dependent computation across solver steps; regression policies use a direct
+  prediction path. We evaluate task success on LIBERO-Object and profile supported configurations
+  across seven backends on NVIDIA, AMD, Apple, Intel, and Qualcomm hardware. BitVLA completes 200/200 LIBERO-Object episodes on an
+  8&nbsp;GB Jetson Orin Nano; a separate desktop measurement records 1.3&nbsp;GiB of device memory.
+  A ternary tensor-core kernel accelerates its client inference by 4.0&ndash;4.6&times; over the
+  CUDA-core baseline on RTX&nbsp;3060 and AGX&nbsp;Orin. A SmolVLA case study identifies a
+  positional-index precision mismatch that changes gripper commands and task success, motivating
+  fixed-input numerical checks alongside rollout evaluation. Physical deployments on UR10e and
+  ALOHA demonstrate robot integration, while separate delay and execution-horizon studies
+  characterize synchronous action replay.</p>
+</section>
 
-      <section class="section" id="comparison">
-        <div class="container">
-          <h2>Comparison</h2>
-          <p class="section-intro">
-            The project targets shared execution across VLA architectures and processor backends, with numerical checks
-            and robot evaluation. Python reference stacks, quantization, and vendor compilers each solve adjacent
-            parts of the deployment problem.
-          </p>
-          <div class="comparison-grid">
-            <article>
-              <h3>Python reference servers</h3>
-              <p>
-                Eager PyTorch dispatch leaves batch-1 VLA inference launch-bound. <span class="mono">torch.compile</span>
-                closes much of the gap. Against the faster of the two on an RTX 3090, <span class="mono">vla.cpp</span>
-                matches four models and is 1.18-1.84x faster on three, with no Python in the model path.
-              </p>
-            </article>
-            <article>
-              <h3>Quantization-only deployment</h3>
-              <p>
-                Weight packing controls footprint but not arithmetic cost. Packing BitVLA leaves latency unchanged; the
-                4.0-4.6x speedup comes from moving the same ternary math onto IMMA tensor cores.
-              </p>
-            </article>
-            <article>
-              <h3>Single-target compilers</h3>
-              <p>
-                TensorRT is 1.85x faster for GR00T-N1.7 on an RTX PRO Blackwell 1000, but it targets NVIDIA only.
-                <span class="mono">vla.cpp</span> favors one bundle format and one serving path across eleven models on
-                NVIDIA, Apple, and Intel hardware, including CPUs.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
+<!-- ============================== overview video ============================== -->
+<section id="video">
+  <div class="teaser">
+    <video src="assets/vla.cpp.mp4" poster="assets/vla.cpp-poster.jpg"
+           controls playsinline preload="metadata"></video>
+    <p class="cap">Overview of <code>vla.cpp</code>. Demo footage is sped up.</p>
+  </div>
+</section>
 
-      <section class="section" id="citation">
-        <div class="container narrow">
-          <h2>Citation</h2>
-          <div class="citation-box">
-            <button class="copy-button" type="button" data-copy-target="bibtex-code">Copy</button>
-            <pre class="bibtex"><code id="bibtex-code">@article{anonymous2026vlacpp,
-  title={vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models},
-  author={Anonymous},
-  year={2026}
-}</code></pre>
-          </div>
-        </div>
-      </section>
+<!-- ========================= model x backend explorer ========================= -->
+<section id="explorer">
+  <h2>Try it: what runs where</h2>
+  <p class="lede" role="note">The numbers in the table below were last updated in October 2026
+  and may differ from those reported in the paper.</p>
 
-    </main>
+  <div class="xp" id="xp-app">
+    <div class="xp-matrix" data-pane="matrix"></div>
 
-    <footer class="footer">
-      <div class="container">
-        <span>© 2026 vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models.</span>
-      </div>
-    </footer>
-    <div id="evidence-modal" class="evidence-modal" hidden>
-      <div class="evidence-modal-backdrop" data-close-modal></div>
-      <div class="evidence-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <button class="modal-close" type="button" data-close-modal aria-label="Close video evidence">Close</button>
-        <div id="modal-media" class="modal-media"></div>
-        <div class="modal-copy">
-          <h3 id="modal-title">Trial evidence</h3>
-          <p id="modal-meta"></p>
-        </div>
+    <div class="xp-main">
+      <div class="xp-model" data-pane="model"></div>
+      <div class="xp-cands" data-pane="table"></div>
+    </div>
+
+    <div class="xp-foot">
+      <div class="xp-verdict" data-pane="verdict"></div>
+      <div class="xp-sort" role="group" aria-label="Sort key">
+        <button type="button" data-sort="lat" aria-pressed="true">sort by p50</button>
+        <button type="button" data-sort="succ" aria-pressed="false">by success</button>
       </div>
     </div>
-    <script src="data/aloha-evidence.js"></script>
-    <script src="aloha-gallery.js"></script>
-    <script src="page-animation.js"></script>
-    <script>
-      document.querySelectorAll("[data-copy-target]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const target = document.getElementById(button.dataset.copyTarget);
-          if (!target) return;
+  </div>
+</section>
 
-          try {
-            await navigator.clipboard.writeText(target.innerText.trim());
-            button.textContent = "Copied";
-            window.setTimeout(() => {
-              button.textContent = "Copy";
-            }, 1600);
-          } catch {
-            button.textContent = "Select text";
-          }
-        });
-      });
-    </script>
-  </body>
+<!-- ============================== method ============================== -->
+<section id="method">
+  <h2>Method</h2>
+
+  <figure>
+    <img src="assets/vla-cpp-diagram.png" alt="Architecture of vla.cpp: a Python robot or simulator client exchanges Protobuf messages over ZeroMQ with the C++ runtime, which loads a GGUF model bundle and runs on llama.cpp&rsquo;s ggml over hardware backends, with CUDA and CPU shown.">
+    <figcaption><b>Architecture.</b> The C++ server loads GGUF weights and returns action chunks; the
+      client owns sensing and control. Adapters select model-specific computation &mdash; attention
+      pattern, conditioning and action head &mdash; while loading, tensor execution and serving are
+      shared. CUDA and CPU illustrate the backend layer; ROCm, Metal, SYCL, OpenVINO and Hexagon
+      use the same runtime interface. Observation tokens form a prefix whose features and projections are reused
+      across solver steps, so an iterative head pays for conditioning once per query rather than
+      once per step.</figcaption>
+  </figure>
+
+  <div class="scene"><b>Numerical validation, not just rollouts.</b> A prediction-check tool fixes
+  weights, images, tokens, state, noise, masks, schedules and transforms, then compares runtime
+  actions against the reference on maximum absolute and relative RMS error, with intermediate
+  tensors to localise a discrepancy. The SmolVLA case study is what this is for: its vision encoder
+  maps patch coordinates to discrete indices, and computing them at a different precision moves a
+  value across an index boundary. Matching the reference takes the position-embedding relative error
+  from 0.32 to 0.003 and LIBERO-Object task 0 from 2/10 to 9/10 episodes. A rollout score alone
+  would not have located it.</div>
+</section>
+
+<!-- ============================== simulation ============================== -->
+<section id="sim">
+  <h2>In simulation</h2>
+  <p class="lede">The explorer&rsquo;s success rates are all LIBERO-Object. Two of its episodes are
+  shown here, run through <code>vla.cpp</code> on an RTX&nbsp;3090, beside two clips from
+  SimplerEnv&rsquo;s WidowX tasks, a second benchmark. There, at 252-pixel input, GR00T-N1.6
+  reaches 80% on &ldquo;put carrot on plate&rdquo; and 70% on &ldquo;put spoon on towel&rdquo;.</p>
+  <div class="grid g4" style="margin-top:1.6rem">
+    <div class="vid">
+      <div class="ph sq">
+        <video autoplay muted loop playsinline preload="auto" src="assets/videos/libero-object-gr00t-n17-alphabet-soup.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">libero-object-gr00t-n17-alphabet-soup.mp4</span></div>
+      </div>
+      <div class="vmeta"><div class="top"><span class="tag ctl">LIBERO-Object</span></div>
+        <div class="sub"><b>Pick up the alphabet soup and place it in the basket.</b> GR00T-N1.7, a
+        successful episode.</div></div>
+    </div>
+    <div class="vid">
+      <div class="ph sq">
+        <video autoplay muted loop playsinline preload="auto" src="assets/videos/libero-object-bitvla-butter.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">libero-object-bitvla-butter.mp4</span></div>
+      </div>
+      <div class="vmeta"><div class="top"><span class="tag ctl">LIBERO-Object</span></div>
+        <div class="sub"><b>Pick up the butter and place it in the basket.</b> BitVLA, a successful
+        episode.</div></div>
+    </div>
+    <div class="vid">
+      <div class="ph sq">
+        <video autoplay muted loop playsinline preload="auto" src="assets/videos/simplerenv-carrot-plate.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">simplerenv-carrot-plate.mp4</span></div>
+      </div>
+      <div class="vmeta"><div class="top"><span class="tag ctl">SimplerEnv</span></div>
+        <div class="sub"><b>Put carrot on plate.</b> GR00T-N1.6 succeeds in 80% of trials on this
+        task.</div></div>
+    </div>
+    <div class="vid">
+      <div class="ph sq">
+        <video autoplay muted loop playsinline preload="auto" src="assets/videos/simplerenv-eggplant-basket.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">simplerenv-eggplant-basket.mp4</span></div>
+      </div>
+      <div class="vmeta"><div class="top"><span class="tag ctl">SimplerEnv</span></div>
+        <div class="sub"><b>Put eggplant in the basket.</b> Shown as a rollout only; no success rate
+        is reported for this task.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== deployment ============================== -->
+<section id="robot">
+  <h2>On real robots</h2>
+  <p class="lede">Two embodiments under synchronous chunked control: the client executes
+  <i>S</i> actions from each chunk, then waits for the next prediction.</p>
+
+  <!-- ---------- A. UR10e ---------- -->
+  <h3><span class="n">UR10e &middot; A</span>One task, four backends</h3>
+  <p class="subnote">SmolVLA fine-tuned on 80 demonstrations of a cup pick-and-place, with
+  <i>S</i>&nbsp;=&nbsp;25 actions at 20&nbsp;Hz and 20 episodes per backend.</p>
+
+  <figure>
+    <img src="assets/ur10e.jpg" alt="UR10e cup pick-and-place in three stages: grasp the cup, carry it to the basket, release it.">
+    <figcaption><b>The task.</b> Grasp the cup, carry it to the basket, release it. All 80 evaluated
+      rollouts grasp and carry; every one of the 27 failures happens at release. That shared failure
+      mode is why binary success barely moves across backends even as latency changes by
+      33&times;.</figcaption>
+  </figure>
+
+  <table class="tbl">
+    <thead><tr><th>Backend</th><th class="r">Round trip</th><th class="r">Success [95% CI]</th><th class="r">Effective rate</th></tr></thead>
+    <tbody>
+      <tr><th>CUDA, RTX 5070 laptop</th><td class="r">111.4 ms</td><td class="r">15/20 <span class="note">[53.1, 88.8]</span></td><td class="r"><b>17.7 Hz</b></td></tr>
+      <tr><th>Metal, Mac Mini M4</th><td class="r">582.0 ms</td><td class="r">12/20 <span class="note">[38.7, 78.1]</span></td><td class="r"><b>12.8 Hz</b></td></tr>
+      <tr><th>CPU, i9-14900HX</th><td class="r">2164.4 ms</td><td class="r">12/20 <span class="note">[38.7, 78.1]</span></td><td class="r"><b>7.1 Hz</b></td></tr>
+      <tr><th>CPU, Ryzen 7 6850HS</th><td class="r">3652.9 ms</td><td class="r">14/20 <span class="note">[48.1, 85.5]</span></td><td class="r"><b>5.0 Hz</b></td></tr>
+    </tbody>
+  </table>
+  <div class="scene"><b>What the rate means.</b> Effective rate counts executed actions per
+  wall-clock second, so it includes robot motion as well as inference: in a blocking loop each
+  cycle costs the round trip plus <i>S</i>&Delta;<i>t</i>. Between the fastest and slowest settings
+  the share of wall time blocked on prediction grows from 8% to 73%. Metal and Ryzen include about
+  161&nbsp;ms of network time, and Metal runs the vision and language towers in 32-bit.</div>
+
+  <!-- ---------- B. ALOHA ---------- -->
+  <h3><span class="n">ALOHA &middot; B</span>Embedded, on an AGX Orin</h3>
+  <p class="subnote">GR00T-N1.6 in BF16, served on the Jetson at roughly 470&nbsp;ms per predicted
+  chunk with <i>H</i>&nbsp;=&nbsp;8, <i>S</i>&nbsp;=&nbsp;7 and a 1.3&nbsp;s replan period. Twenty
+  trials per task, external overview camera, all clips at 3&times; speed.</p>
+
+  <div class="grid g2">
+
+    <div class="vid">
+      <div class="ph">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/aloha-task1-pass-3x.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">assets/videos/<br>aloha-task1-pass-3x.mp4</span></div>
+      </div>
+      <div class="vmeta">
+        <div class="top"><span class="tag ours">vla.cpp BF16</span><span class="sr">18/20</span></div>
+        <p class="instr">Task 1 &mdash; &ldquo;pick up all blocks and place them into the white box&rdquo;</p>
+        <div class="sub">GR00T-N1.6 &middot; about 49&nbsp;s per completion &middot; 3&times; speed</div>
+      </div>
+    </div>
+
+    <div class="vid">
+      <div class="ph">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/aloha-task2-pass-3x.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">assets/videos/<br>aloha-task2-pass-3x.mp4</span></div>
+      </div>
+      <div class="vmeta">
+        <div class="top"><span class="tag ours">vla.cpp BF16</span><span class="sr">17/20</span></div>
+        <p class="instr">Task 2 &mdash; &ldquo;trash into the box, then the banana onto the white dish&rdquo;</p>
+        <div class="sub">GR00T-N1.6 &middot; about 28&nbsp;s per completion &middot; 3&times; speed</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="scene"><b>And the five that failed.</b> Thirty-five of the 40 trials succeed. The two
+  clips below are the minority case, kept on the page rather than cut: a partial failure that times
+  out mid-sequence, and one trial that does not recover at all.</div>
+
+  <div class="grid g2">
+
+    <div class="vid">
+      <div class="ph">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/aloha-task1-fail-3x.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">assets/videos/<br>aloha-task1-fail-3x.mp4</span></div>
+      </div>
+      <div class="vmeta">
+        <div class="top"><span class="tag ctl">failure</span><span class="sr bad">partial</span></div>
+        <p class="instr">Task 1, setup 5 &mdash; timeout with blocks still on the table</p>
+        <div class="sub">one of two failures in 20 trials &middot; 3&times; speed</div>
+      </div>
+    </div>
+
+    <div class="vid">
+      <div class="ph">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/aloha-task2-fail-3x.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">assets/videos/<br>aloha-task2-fail-3x.mp4</span></div>
+      </div>
+      <div class="vmeta">
+        <div class="top"><span class="tag ctl">failure</span><span class="sr bad">complete</span></div>
+        <p class="instr">Task 2, setup 5 &mdash; neither object is placed</p>
+        <div class="sub">one of three failures in 20 trials &middot; 3&times; speed</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ---------- C. execution horizon ---------- -->
+  <h3><span class="n">Control &middot; C</span>How long to act before looking again</h3>
+  <p class="subnote">SmolVLA on LIBERO-Object, <i>H</i>&nbsp;=&nbsp;50, 50 episodes per setting,
+  evaluated on the Orin Nano.</p>
+
+  <figure class="narrow">
+    <div class="hz-key" aria-hidden="true">
+      <span><svg width="26" height="10"><line x1="1" x2="25" y1="5" y2="5" class="hz-suc"/><circle cx="13" cy="5" r="4" class="rf-pt"/></svg><span>Task success, 95% Wilson interval</span></span>
+      <span><svg width="26" height="10"><line x1="1" x2="25" y1="5" y2="5" class="hz-thr"/><rect x="9" y="1" width="8" height="8" class="hz-sq"/></svg><span>Throughput <i>S</i>/<i>L</i></span></span>
+    </div>
+    <div class="hz" id="hz-app"></div>
+    <figcaption><b>Execution horizon.</b> Raising <i>S</i> amortises inference over more actions
+      &mdash; throughput climbs from 2.8 to 109.4&nbsp;Hz &mdash; but it also delays feedback.
+      Success varies non-monotonically up to <i>S</i>&nbsp;=&nbsp;32, peaks at 49/50 at
+      <i>S</i>&nbsp;=&nbsp;16, and falls to 19/50 at <i>S</i>&nbsp;=&nbsp;<i>H</i>, where the robot
+      executes the whole predicted chunk before observing again. A runtime comparison should
+      therefore state both <i>S</i> and the solver step count <i>T</i>. Hover over a setting for its
+      numbers.</figcaption>
+  </figure>
+
+  <div class="scene"><b>Delay is not the whole story.</b> Injecting an artificial delay after
+  GR00T-N1.7 inference on an RTX&nbsp;4070, before each chunk reaches ALOHA, leaves success at 9/10
+  or 10/10 from 0 all the way to 2000&nbsp;ms, with ten episodes per condition. Small samples near
+  100% success resolve little, but on this quasi-static tabletop task the execution horizon matters
+  more than the latency it hides.</div>
+
+  <!-- ---------- D. roofline ---------- -->
+  <h3><span class="n">Compute &middot; D</span>Where the inference time goes</h3>
+  <p class="subnote">The ten models with BF16 weights, at the defaults of the latest benchmark
+  round, on the RTX&nbsp;3060 and Jetson AGX Orin.</p>
+
+  <figure id="roofline">
+    <div class="rf" id="rf-app"></div>
+    <figcaption><b>Where the work lands.</b> Arithmetic intensity against achieved throughput for one
+      call at the defaults, using the p50 latencies from the explorer above. The work is counted from
+      each model&rsquo;s runtime graphs at the benchmark&rsquo;s inputs. FLOPs come from every matrix
+      multiply, attention included. Bytes are the weights and cached keys and values those multiplies
+      read, with an action head&rsquo;s weights read once per solver step. Activations are not
+      counted, so intensities are upper bounds. Hover over a point, or tab to it, for its numbers;
+      N1.5, N1.6 and N1.7 are GR00T. The roof combines measured BF16 GEMM rates of 25.6 and
+      21.3&nbsp;TFLOP/s with nominal bandwidths of 360 and 204.8&nbsp;GB/s, so it shows only the
+      models whose multiplies run in BF16. BitVLA multiplies in int8 on the tensor cores, and
+      Octo-Small and TurboVLA in F32; each has a different ceiling, so none of the three is plotted.
+      OpenVLA-OFT does not fit on the RTX&nbsp;3060.</figcaption>
+  </figure>
+</section>
+
+<footer>
+  <p>Code and checkpoints will be released on acceptance.</p>
+</footer>
+
+</div>
+
+<script src="assets/explorer.js" charset="utf-8"></script>
+<script src="assets/roofline.js" charset="utf-8"></script>
+<script src="assets/horizon.js" charset="utf-8"></script>
+<script>
+// A placeholder becomes a real player as soon as its .mp4 is dropped in.
+document.querySelectorAll('.ph video').forEach(function(v){
+  function ready(){ v.parentNode.classList.add('has-video'); }
+  if (v.readyState >= 1) ready();                 // already probed before this ran
+  v.addEventListener('loadedmetadata', ready);    // fires with preload="metadata"
+  v.addEventListener('loadeddata', ready);
+});
+</script>
+</body>
 </html>

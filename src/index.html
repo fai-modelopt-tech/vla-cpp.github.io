@@ -102,6 +102,7 @@ h1 .eng{font-family:var(--mono);font-size:.86em;color:var(--engine);letter-spaci
   align-items:center;text-align:left}
 .ar-box{border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:14px 14px 15px;min-width:0}
 .ar-rt{background:var(--panel);border-color:var(--engine)}
+.ar-rt .ar-h{justify-content:center}
 .ar-h{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--ink);line-height:1.3;
   margin-bottom:12px}
 .ar-h>.lg{--lh:30px}
@@ -263,11 +264,15 @@ figure .tz-p img{max-width:none;border-radius:0;width:calc(505.47 / var(--w) * 1
 .g4{grid-template-columns:repeat(4,1fr)}
 @media (max-width:760px){ .g4{grid-template-columns:repeat(2,1fr)} }
 @media (max-width:760px){ .g3,.g2{grid-template-columns:1fr;max-width:520px;margin-left:auto;margin-right:auto} }
+/* portrait clips: a narrower row on desktop, and still three across on phones */
+.port{max-width:720px;margin-left:auto;margin-right:auto}
+@media (max-width:760px){ .g3.port{grid-template-columns:repeat(3,1fr);gap:.6rem;max-width:none} }
 
 .vid{display:flex;flex-direction:column}
 .ph{position:relative;aspect-ratio:16/9;background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .ph.sq{aspect-ratio:1/1}
+.ph.tall{aspect-ratio:4/5}
 .ph video{display:none;width:100%;height:100%;object-fit:cover;background:#000}
 .ph.has-video{border-color:var(--line);background:#000}
 .ph.has-video video{display:block}
@@ -497,7 +502,8 @@ footer p{margin:.4rem 0}
 
   <p class="notice" role="note"><b>Updated since submission.</b> This page describes
   <code>vla.cpp</code> as it is now, not as in the submitted paper: thirteen models instead of
-  eleven, seven backends instead of five, and newer LIBERO and latency measurements. Counts and
+  eleven, seven backends instead of five, newer LIBERO and latency measurements, and a third robot,
+  an SO-101 arm. Counts and
   numbers here, including in the teaser figure, can therefore differ from the paper&rsquo;s.
   Last updated October 2026.</p>
 </header>
@@ -587,9 +593,9 @@ footer p{margin:.4rem 0}
   </div>
 </section>
 
-<!-- ============================== method ============================== -->
-<section id="method">
-  <h2>Method</h2>
+<!-- ============================== architecture ============================== -->
+<section id="architecture">
+  <h2>Architecture</h2>
 
   <figure>
     <div class="ar" role="img" aria-label="Architecture of vla.cpp: a Python client for robots and simulators (LIBERO, SimplerEnv, ALOHA, UR10e) sends observations, configuration, statistics and instructions, and receives action chunks, as Protobuf messages over ZeroMQ. The C++ runtime, with a unified protocol, a cross-attention KV cache, a solver loop and a ternary kernel, runs on llama.cpp's ggml over seven hardware backends, and loads a GGUF model bundle.">
@@ -708,8 +714,9 @@ footer p{margin:.4rem 0}
 <!-- ============================== deployment ============================== -->
 <section id="robot">
   <h2>On real robots</h2>
-  <p class="lede">Two embodiments under synchronous chunked control: the client executes
-  <i>S</i> actions from each chunk, then waits for the next prediction.</p>
+  <p class="lede">Three embodiments, each driven by a vla.cpp server. The UR10e and ALOHA runs use
+  synchronous chunked control: the client executes <i>S</i> actions from each chunk, then waits
+  for the next prediction.</p>
 
   <!-- ---------- A. UR10e ---------- -->
   <h3><span class="n">UR10e &middot; A</span>One task, four backends</h3>
@@ -809,8 +816,63 @@ footer p{margin:.4rem 0}
 
   </div>
 
-  <!-- ---------- C. execution horizon ---------- -->
-  <h3><span class="n">Control &middot; C</span>How long to act before looking again</h3>
+  <!-- ---------- C. SO-101 ---------- -->
+  <h3><span class="n">SO-101 &middot; C</span>&pi;0.5 on an Intel AI board</h3>
+  <p class="subnote">&pi;0.5 served by vla.cpp on an Intel AI board with a Core&nbsp;Ultra&nbsp;X7&nbsp;358H,
+  driving an SO-101 arm. Three tasks, all clips at 4&times; speed.</p>
+
+  <div class="grid g3 port">
+
+    <div class="vid">
+      <div class="ph tall">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/so101-open-drawer-4x.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">assets/videos/<br>so101-open-drawer-4x.mp4</span></div>
+      </div>
+      <div class="vmeta">
+        <div class="top"><span class="tag ours">vla.cpp</span></div>
+        <p class="instr">Open the drawer</p>
+        <div class="sub">&pi;0.5 &middot; 4&times; speed</div>
+      </div>
+    </div>
+
+    <div class="vid">
+      <div class="ph tall">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/so101-close-drawer-4x.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">assets/videos/<br>so101-close-drawer-4x.mp4</span></div>
+      </div>
+      <div class="vmeta">
+        <div class="top"><span class="tag ours">vla.cpp</span></div>
+        <p class="instr">Close the drawer</p>
+        <div class="sub">&pi;0.5 &middot; 4&times; speed</div>
+      </div>
+    </div>
+
+    <div class="vid">
+      <div class="ph tall">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/so101-stack-cube-4x.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">assets/videos/<br>so101-stack-cube-4x.mp4</span></div>
+      </div>
+      <div class="vmeta">
+        <div class="top"><span class="tag ours">vla.cpp</span></div>
+        <p class="instr">Stack the cubes</p>
+        <div class="sub">&pi;0.5 &middot; 4&times; speed</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================== analysis ============================== -->
+<section id="analysis">
+  <h2>Analysis</h2>
+  <p class="lede">How often a robot should ask for a new chunk, and what bounds the time each call
+  takes.</p>
+
+  <!-- ---------- A. execution horizon ---------- -->
+  <h3><span class="n">Control &middot; A</span>How long to act before looking again</h3>
   <p class="subnote">SmolVLA on LIBERO-Object, <i>H</i>&nbsp;=&nbsp;50, 50 episodes per setting,
   evaluated on the Orin Nano.</p>
 
@@ -835,8 +897,8 @@ footer p{margin:.4rem 0}
   100% success resolve little, but on this quasi-static tabletop task the execution horizon matters
   more than the latency it hides.</div>
 
-  <!-- ---------- D. roofline ---------- -->
-  <h3><span class="n">Compute &middot; D</span>Where the inference time goes</h3>
+  <!-- ---------- B. roofline ---------- -->
+  <h3><span class="n">Compute &middot; B</span>Where the inference time goes</h3>
   <p class="subnote">The ten models with BF16 weights, at the defaults of the latest benchmark
   round, on the RTX&nbsp;3060 and Jetson AGX Orin.</p>
 

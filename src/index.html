@@ -95,10 +95,10 @@ h1 .eng{font-family:var(--mono);font-size:.86em;color:var(--engine);letter-spaci
 .lg-huggingface{width:calc(var(--lh,14px)*1.1)} .lg-cplusplus{width:calc(var(--lh,14px)*.89)}
 
 /* ---------------- architecture ----------------
-   Drawn in HTML so it reflows: five columns (client, wire, runtime, wire, bundle) on wide screens,
+   Drawn in HTML so it reflows: five columns (bundle, wire, runtime, wire, client) on wide screens,
    one stacked column with vertical arrows below 760px. The runtime takes the vla.cpp slate as its
    border; its backend layer reuses the brand-coloured chips from above the abstract. */
-.ar{display:grid;grid-template-columns:minmax(0,1.2fr) 96px minmax(0,2.6fr) 56px minmax(0,1.15fr);
+.ar{display:grid;grid-template-columns:minmax(0,1.15fr) 56px minmax(0,2.6fr) 96px minmax(0,1.2fr);
   align-items:center;text-align:left}
 .ar-box{border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:14px 14px 15px;min-width:0}
 .ar-rt{background:var(--panel);border-color:var(--engine)}
@@ -139,25 +139,29 @@ h1 .eng{font-family:var(--mono);font-size:.86em;color:var(--engine);letter-spaci
 .ar-th img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:5px}
 .ar-th span{position:absolute;left:4px;bottom:4px;font-size:10px;line-height:1.4;padding:0 5px;border-radius:3px;
   background:rgba(255,255,255,.9);color:var(--ink)}
+/* five tiles in two columns: the odd one out sits centred under the others */
+.ar-th div:last-child:nth-child(odd){grid-column:span 2;justify-self:center;width:calc(50% - 3px)}
 .ar-arrow{position:relative;height:0;border-top:1.5px solid var(--ink);margin:10px 3px 5px}
-.ar-arrow.back{margin-top:14px}
+.ar-arrow~.ar-arrow{margin-top:14px}
 .ar-arrow::after{content:"";position:absolute;top:-5.75px;border-top:5px solid transparent;border-bottom:5px solid transparent}
 .ar-arrow.fwd::after{right:-3px;border-left:8px solid var(--ink)}
 .ar-arrow.back::after{left:-3px;border-right:8px solid var(--ink)}
 .ar-arrow.dash{border-top-style:dashed;border-top-color:var(--muted)}
-.ar-arrow.dash::after{border-right-color:var(--muted)}
+.ar-arrow.dash::after{border-left-color:var(--muted)}
 @media (max-width:760px){
   .ar{grid-template-columns:1fr;max-width:520px;margin:0 auto}
   .ar-wire{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 10px;padding:10px 0}
   .ar-wl:first-child{margin:0;flex-basis:100%}
-  .ar-th{grid-template-columns:repeat(4,1fr)}
-  .ar-arrow,.ar-arrow.back{width:0;height:28px;border-top:0;border-left:1.5px solid var(--ink);margin:0 0 0 5px}
+  .ar-th{grid-template-columns:repeat(5,1fr)}
+  .ar-th div:last-child:nth-child(odd){grid-column:auto;width:auto}
+  .ar-th span{left:3px;bottom:3px;font-size:9px;padding:0 3px}
+  .ar-arrow,.ar-arrow~.ar-arrow{width:0;height:28px;border-top:0;border-left:1.5px solid var(--ink);margin:0 0 0 5px}
   .ar-arrow.fwd::after,.ar-arrow.back::after{left:-5.75px;right:auto;
     border-left:5px solid transparent;border-right:5px solid transparent}
   .ar-arrow.fwd::after{top:auto;bottom:-3px;border-bottom:0;border-top:8px solid var(--ink)}
   .ar-arrow.back::after{top:-3px;border-top:0;border-bottom:8px solid var(--ink)}
   .ar-arrow.dash{border-left-style:dashed;border-left-color:var(--muted)}
-  .ar-arrow.dash::after{border-right-color:transparent;border-bottom-color:var(--muted)}
+  .ar-arrow.dash::after{border-left-color:transparent;border-top-color:var(--muted)}
   .ar-feat{grid-template-columns:repeat(2,1fr)}
 }
 
@@ -598,24 +602,13 @@ footer p{margin:.4rem 0}
   <h2>Architecture</h2>
 
   <figure>
-    <div class="ar" role="img" aria-label="Architecture of vla.cpp: a Python client for robots and simulators (LIBERO, SimplerEnv, ALOHA, UR10e) sends observations, configuration, statistics and instructions, and receives action chunks, as Protobuf messages over ZeroMQ. The C++ runtime, with a unified protocol, a cross-attention KV cache, a solver loop and a ternary kernel, runs on llama.cpp's ggml over seven hardware backends, and loads a GGUF model bundle.">
+    <div class="ar" role="img" aria-label="Architecture of vla.cpp, left to right: a GGUF model bundle is loaded by the C++ runtime, which has a unified protocol, a cross-attention KV cache, a solver loop and a ternary kernel, and runs on llama.cpp's ggml over seven hardware backends. A Python client for robots and simulators (LIBERO, SimplerEnv, ALOHA, UR10e, SO-101) sends requests carrying observations, configuration, statistics and instructions, and receives action chunks, as Protobuf messages over ZeroMQ.">
       <div class="ar-box">
-        <div class="ar-h"><svg class="lg lg-python" aria-hidden="true"><use href="#si-python"/></svg><div>Client<span>Python &middot; robots and simulators</span></div></div>
-        <div class="ar-th">
-          <div><img src="assets/arch/libero.jpg" alt="" width="84" height="63"><span>LIBERO</span></div>
-          <div><img src="assets/arch/simplerenv.jpg" alt="" width="84" height="63"><span>SimplerEnv</span></div>
-          <div><img src="assets/arch/aloha.jpg" alt="" width="84" height="63"><span>ALOHA</span></div>
-          <div><img src="assets/arch/ur10e.jpg" alt="" width="84" height="63"><span>UR10e</span></div>
-        </div>
-        <ul class="ar-list">
-          <li><svg class="ic" aria-hidden="true"><use href="#tb-eye"/></svg>Observation</li><li><svg class="ic" aria-hidden="true"><use href="#tb-adjustments-horizontal"/></svg>Configuration</li>
-          <li><svg class="ic" aria-hidden="true"><use href="#tb-chart-bar"/></svg>Statistics</li><li><svg class="ic" aria-hidden="true"><use href="#tb-message"/></svg>Instruction</li>
-        </ul>
+        <div class="ar-h"><svg class="lg lg-huggingface" aria-hidden="true"><use href="#si-huggingface"/></svg><div>Model bundle<span>GGUF checkpoints</span></div></div>
+        <ul class="ar-list mono"><li><svg class="ic" aria-hidden="true"><use href="#tb-file"/></svg>model.gguf</li></ul>
       </div>
       <div class="ar-wire" aria-hidden="true">
-        <div class="ar-wl"><svg class="ic ar-wi" aria-hidden="true"><use href="#tb-arrows-exchange"/></svg>Protobuf over ZeroMQ</div>
-        <div class="ar-arrow fwd"></div><div class="ar-wl">request</div>
-        <div class="ar-arrow back"></div><div class="ar-wl">action chunk</div>
+        <div class="ar-arrow fwd dash"></div><div class="ar-wl">loads</div>
       </div>
       <div class="ar-box ar-rt">
         <div class="ar-h"><img class="ar-logo" src="assets/arch/vla-cpp-logo.png" alt="vla.cpp" width="125" height="24"><div>runtime<span><svg class="lg lg-cplusplus" aria-hidden="true"><use href="#si-cplusplus"/></svg>C++ server</span></div></div>
@@ -635,11 +628,23 @@ footer p{margin:.4rem 0}
           </ul></div>
       </div>
       <div class="ar-wire" aria-hidden="true">
-        <div class="ar-arrow back dash"></div><div class="ar-wl">loads</div>
+        <div class="ar-wl"><svg class="ic ar-wi" aria-hidden="true"><use href="#tb-arrows-exchange"/></svg>Protobuf over ZeroMQ</div>
+        <div class="ar-arrow back"></div><div class="ar-wl">request</div>
+        <div class="ar-arrow fwd"></div><div class="ar-wl">action chunk</div>
       </div>
       <div class="ar-box">
-        <div class="ar-h"><svg class="lg lg-huggingface" aria-hidden="true"><use href="#si-huggingface"/></svg><div>Model bundle<span>GGUF checkpoints</span></div></div>
-        <ul class="ar-list mono"><li><svg class="ic" aria-hidden="true"><use href="#tb-file"/></svg>model.gguf</li><li><svg class="ic" aria-hidden="true"><use href="#tb-file"/></svg>mmproj-model.gguf</li></ul>
+        <div class="ar-h"><svg class="lg lg-python" aria-hidden="true"><use href="#si-python"/></svg><div>Client<span>Python &middot; robots and simulators</span></div></div>
+        <div class="ar-th">
+          <div><img src="assets/arch/libero.jpg" alt="" width="84" height="63"><span>LIBERO</span></div>
+          <div><img src="assets/arch/simplerenv.jpg" alt="" width="84" height="63"><span>SimplerEnv</span></div>
+          <div><img src="assets/arch/aloha.jpg" alt="" width="84" height="63"><span>ALOHA</span></div>
+          <div><img src="assets/arch/ur10e.jpg" alt="" width="84" height="63"><span>UR10e</span></div>
+          <div><img src="assets/arch/so101.jpg" alt="" width="84" height="63"><span>SO-101</span></div>
+        </div>
+        <ul class="ar-list">
+          <li><svg class="ic" aria-hidden="true"><use href="#tb-eye"/></svg>Observation</li><li><svg class="ic" aria-hidden="true"><use href="#tb-adjustments-horizontal"/></svg>Configuration</li>
+          <li><svg class="ic" aria-hidden="true"><use href="#tb-chart-bar"/></svg>Statistics</li><li><svg class="ic" aria-hidden="true"><use href="#tb-message"/></svg>Instruction</li>
+        </ul>
       </div>
     </div>
     <figcaption><b>Architecture.</b> The C++ server loads GGUF weights and returns action chunks; the

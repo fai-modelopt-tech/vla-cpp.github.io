@@ -139,8 +139,6 @@ h1 .eng{font-family:var(--mono);font-size:.86em;color:var(--engine);letter-spaci
 .ar-th img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:5px}
 .ar-th span{position:absolute;left:4px;bottom:4px;font-size:10px;line-height:1.4;padding:0 5px;border-radius:3px;
   background:rgba(255,255,255,.9);color:var(--ink)}
-/* five tiles in two columns: the odd one out sits centred under the others */
-.ar-th div:last-child:nth-child(odd){grid-column:span 2;justify-self:center;width:calc(50% - 3px)}
 .ar-arrow{position:relative;height:0;border-top:1.5px solid var(--ink);margin:10px 3px 5px}
 .ar-arrow~.ar-arrow{margin-top:14px}
 .ar-arrow::after{content:"";position:absolute;top:-5.75px;border-top:5px solid transparent;border-bottom:5px solid transparent}
@@ -152,9 +150,7 @@ h1 .eng{font-family:var(--mono);font-size:.86em;color:var(--engine);letter-spaci
   .ar{grid-template-columns:1fr;max-width:520px;margin:0 auto}
   .ar-wire{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 10px;padding:10px 0}
   .ar-wl:first-child{margin:0;flex-basis:100%}
-  .ar-th{grid-template-columns:repeat(5,1fr)}
-  .ar-th div:last-child:nth-child(odd){grid-column:auto;width:auto}
-  .ar-th span{left:3px;bottom:3px;font-size:9px;padding:0 3px}
+  .ar-th{grid-template-columns:repeat(3,1fr)}
   .ar-arrow,.ar-arrow~.ar-arrow{width:0;height:28px;border-top:0;border-left:1.5px solid var(--ink);margin:0 0 0 5px}
   .ar-arrow.fwd::after,.ar-arrow.back::after{left:-5.75px;right:auto;
     border-left:5px solid transparent;border-right:5px solid transparent}
@@ -266,17 +262,16 @@ figure .tz-p img{max-width:none;border-radius:0;width:calc(505.47 / var(--w) * 1
 .g2{grid-template-columns:repeat(2,1fr)}
 .g1{grid-template-columns:1fr;max-width:640px;margin-left:auto;margin-right:auto}
 .g4{grid-template-columns:repeat(4,1fr)}
-@media (max-width:760px){ .g4{grid-template-columns:repeat(2,1fr)} }
+.g5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:760px){ .g4,.g5{grid-template-columns:repeat(2,1fr)} }
+/* an odd card out on a two-column phone row sits centred */
+@media (max-width:760px){ .g5>:last-child:nth-child(odd){grid-column:span 2;justify-self:center;width:calc(50% - .6rem)} }
 @media (max-width:760px){ .g3,.g2{grid-template-columns:1fr;max-width:520px;margin-left:auto;margin-right:auto} }
-/* portrait clips: a narrower row on desktop, and still three across on phones */
-.port{max-width:720px;margin-left:auto;margin-right:auto}
-@media (max-width:760px){ .g3.port{grid-template-columns:repeat(3,1fr);gap:.6rem;max-width:none} }
 
 .vid{display:flex;flex-direction:column}
 .ph{position:relative;aspect-ratio:16/9;background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .ph.sq{aspect-ratio:1/1}
-.ph.tall{aspect-ratio:4/5}
 .ph video{display:none;width:100%;height:100%;object-fit:cover;background:#000}
 .ph.has-video{border-color:var(--line);background:#000}
 .ph.has-video video{display:block}
@@ -506,8 +501,8 @@ footer p{margin:.4rem 0}
 
   <p class="notice" role="note"><b>Updated since submission.</b> This page describes
   <code>vla.cpp</code> as it is now, not as in the submitted paper: thirteen models instead of
-  eleven, seven backends instead of five, newer LIBERO and latency measurements, and a third robot,
-  an SO-101 arm. Counts and
+  eleven, seven backends instead of five, newer LIBERO and latency measurements, a third robot,
+  an SO-101 arm, and RoboCasa in simulation. Counts and
   numbers here, including in the teaser figure, can therefore differ from the paper&rsquo;s.
   Last updated October 2026.</p>
 </header>
@@ -602,7 +597,7 @@ footer p{margin:.4rem 0}
   <h2>Architecture</h2>
 
   <figure>
-    <div class="ar" role="img" aria-label="Architecture of vla.cpp, left to right: a GGUF model bundle is loaded by the C++ runtime, which has a unified protocol, a cross-attention KV cache, a solver loop and a ternary kernel, and runs on llama.cpp's ggml over seven hardware backends. A Python client for robots and simulators (LIBERO, SimplerEnv, ALOHA, UR10e, SO-101) sends requests carrying observations, configuration, statistics and instructions, and receives action chunks, as Protobuf messages over ZeroMQ.">
+    <div class="ar" role="img" aria-label="Architecture of vla.cpp, left to right: a GGUF model bundle is loaded by the C++ runtime, which has a unified protocol, a cross-attention KV cache, a solver loop and a ternary kernel, and runs on llama.cpp's ggml over seven hardware backends. A Python client for robots and simulators (LIBERO, SimplerEnv, RoboCasa, ALOHA, UR10e, SO-101) sends requests carrying observations, configuration, statistics and instructions, and receives action chunks, as Protobuf messages over ZeroMQ.">
       <div class="ar-box">
         <div class="ar-h"><svg class="lg lg-huggingface" aria-hidden="true"><use href="#si-huggingface"/></svg><div>Model bundle<span>GGUF checkpoints</span></div></div>
         <ul class="ar-list mono"><li><svg class="ic" aria-hidden="true"><use href="#tb-file"/></svg>model.gguf</li></ul>
@@ -637,6 +632,7 @@ footer p{margin:.4rem 0}
         <div class="ar-th">
           <div><img src="assets/arch/libero.jpg" alt="" width="84" height="63"><span>LIBERO</span></div>
           <div><img src="assets/arch/simplerenv.jpg" alt="" width="84" height="63"><span>SimplerEnv</span></div>
+          <div><img src="assets/arch/robocasa.jpg" alt="" width="84" height="63"><span>RoboCasa</span></div>
           <div><img src="assets/arch/aloha.jpg" alt="" width="84" height="63"><span>ALOHA</span></div>
           <div><img src="assets/arch/ur10e.jpg" alt="" width="84" height="63"><span>UR10e</span></div>
           <div><img src="assets/arch/so101.jpg" alt="" width="84" height="63"><span>SO-101</span></div>
@@ -670,9 +666,10 @@ footer p{margin:.4rem 0}
   <h2>In simulation</h2>
   <p class="lede">The explorer&rsquo;s success rates are all LIBERO-Object. Two of its episodes are
   shown here, run through <code>vla.cpp</code> on an RTX&nbsp;3090, beside two clips from
-  SimplerEnv&rsquo;s WidowX tasks, a second benchmark. There, at 252-pixel input, GR00T-N1.6
-  reaches 80% on &ldquo;put carrot on plate&rdquo; and 70% on &ldquo;put spoon on towel&rdquo;.</p>
-  <div class="grid g4" style="margin-top:1.6rem">
+  SimplerEnv&rsquo;s WidowX tasks and one from RoboCasa&rsquo;s kitchens. On SimplerEnv, at
+  252-pixel input, GR00T-N1.6 reaches 80% on &ldquo;put carrot on plate&rdquo; and 70% on
+  &ldquo;put spoon on towel&rdquo;.</p>
+  <div class="grid g5" style="margin-top:1.6rem">
     <div class="vid">
       <div class="ph sq">
         <video autoplay muted loop playsinline preload="auto" src="assets/videos/libero-object-gr00t-n17-alphabet-soup.mp4"></video>
@@ -711,6 +708,16 @@ footer p{margin:.4rem 0}
       </div>
       <div class="vmeta"><div class="top"><span class="tag ctl">SimplerEnv</span></div>
         <div class="sub"><b>Put eggplant in the basket.</b> Shown as a rollout only; no success rate
+        is reported for this task.</div></div>
+    </div>
+    <div class="vid">
+      <div class="ph sq">
+        <video autoplay muted loop playsinline preload="auto" src="assets/videos/robocasa-smolvla-close-fridge.mp4"></video>
+        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
+          <span class="file">robocasa-smolvla-close-fridge.mp4</span></div>
+      </div>
+      <div class="vmeta"><div class="top"><span class="tag ctl">RoboCasa</span></div>
+        <div class="sub"><b>Close the fridge.</b> SmolVLA, shown as a rollout only; no success rate
         is reported for this task.</div></div>
     </div>
   </div>
@@ -824,49 +831,21 @@ footer p{margin:.4rem 0}
   <!-- ---------- C. SO-101 ---------- -->
   <h3><span class="n">SO-101 &middot; C</span>&pi;0.5 on an Intel AI board</h3>
   <p class="subnote">&pi;0.5 served by vla.cpp on an Intel AI board with a Core&nbsp;Ultra&nbsp;X7&nbsp;358H,
-  driving an SO-101 arm. Three tasks, all clips at 4&times; speed.</p>
+  driving an SO-101 arm. The clip plays at 1&times; speed.</p>
 
-  <div class="grid g3 port">
-
+  <div class="grid g1">
     <div class="vid">
-      <div class="ph tall">
-        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/so101-open-drawer-4x.mp4"></video>
+      <div class="ph">
+        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/so101-drawer-1x.mp4"></video>
         <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
-          <span class="file">assets/videos/<br>so101-open-drawer-4x.mp4</span></div>
+          <span class="file">assets/videos/<br>so101-drawer-1x.mp4</span></div>
       </div>
       <div class="vmeta">
         <div class="top"><span class="tag ours">vla.cpp</span></div>
-        <p class="instr">Open the drawer</p>
-        <div class="sub">&pi;0.5 &middot; 4&times; speed</div>
+        <p class="instr">Open and close the drawer</p>
+        <div class="sub">&pi;0.5 &middot; 1&times; speed</div>
       </div>
     </div>
-
-    <div class="vid">
-      <div class="ph tall">
-        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/so101-close-drawer-4x.mp4"></video>
-        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
-          <span class="file">assets/videos/<br>so101-close-drawer-4x.mp4</span></div>
-      </div>
-      <div class="vmeta">
-        <div class="top"><span class="tag ours">vla.cpp</span></div>
-        <p class="instr">Close the drawer</p>
-        <div class="sub">&pi;0.5 &middot; 4&times; speed</div>
-      </div>
-    </div>
-
-    <div class="vid">
-      <div class="ph tall">
-        <video autoplay muted loop playsinline controls preload="auto" src="assets/videos/so101-stack-cube-4x.mp4"></video>
-        <div class="phin"><div class="play"></div><div class="lbl">Video placeholder</div>
-          <span class="file">assets/videos/<br>so101-stack-cube-4x.mp4</span></div>
-      </div>
-      <div class="vmeta">
-        <div class="top"><span class="tag ours">vla.cpp</span></div>
-        <p class="instr">Stack the cubes</p>
-        <div class="sub">&pi;0.5 &middot; 4&times; speed</div>
-      </div>
-    </div>
-
   </div>
 </section>
 

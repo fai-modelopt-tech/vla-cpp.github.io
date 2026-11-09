@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>vla.cpp: A Unified Inference Runtime for Vision-Language-Action Models</title>
-<meta name="description" content="vla.cpp, a unified C++ inference runtime that serves thirteen vision-language-action policies across CPU, CUDA, ROCm, Metal, SYCL, OpenVINO and Hexagon, down to an 8 GB Jetson Orin Nano.">
+<meta name="description" content="vla.cpp, a unified C++ inference runtime that serves fourteen vision-language-action policies across CPU, CUDA, ROCm, Metal, SYCL, OpenVINO and Hexagon, down to an 8 GB Jetson Orin Nano.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -488,7 +488,7 @@ footer p{margin:.4rem 0}
 <header>
   <h1><span class="eng">vla.cpp</span>: A Unified Inference Runtime for
   Vision&ndash;Language&ndash;Action Models</h1>
-  <p class="punch">Thirteen vision&ndash;language&ndash;action policies, one C++ runtime, seven
+  <p class="punch">Fourteen vision&ndash;language&ndash;action policies, one C++ runtime, seven
   backends &mdash; from a desktop GPU down to an 8&nbsp;GB Jetson, with no PyTorch at inference
   time.</p>
 
@@ -500,24 +500,24 @@ footer p{margin:.4rem 0}
   </nav>
 
   <p class="notice" role="note"><b>Updated since submission.</b> This page describes
-  <code>vla.cpp</code> as it is now, not as in the submitted paper: thirteen models instead of
+  <code>vla.cpp</code> as it is now, not as in the submitted paper: fourteen models instead of
   eleven, seven backends instead of five, newer LIBERO and latency measurements, a third robot,
   an SO-101 arm, and RoboCasa in simulation. Counts and
   numbers here, including in the teaser figure, can therefore differ from the paper&rsquo;s.
-  Last updated October 2026.</p>
+  Last updated November 2026.</p>
 </header>
 
 <!-- ============================== teaser ============================== -->
 <section id="teaser">
   <figure>
     <div class="tz-row">
-      <div class="tz-p" style="--x:0;--w:165"><img src="assets/teaser.svg" alt="(a) Shared runtime and model format: the vla.cpp C++ server with GGUF weights serves 13 VLA models (SmolVLA, Evo-1, π0, π0.5, Octo-Small, GR00T-N1.5, N1.6 and N1.7, VLA-JEPA, TurboVLA, VLA-Adapter, OpenVLA-OFT, BitVLA) through 7 backends (CUDA, ROCm, Metal, CPU, SYCL, OpenVINO, Hexagon) on RTX 30xx–50xx, Radeon RX 9060 XT and Arc A380 GPUs, Apple M4, Core Ultra iGPU and NPU, Snapdragon X CPU and NPU, desktop CPUs, and Jetson AGX Orin, Orin NX and Orin Nano."></div>
+      <div class="tz-p" style="--x:0;--w:165"><img src="assets/teaser.svg" alt="(a) Shared runtime and model format: the vla.cpp C++ server with GGUF weights serves 14 VLA models (SmolVLA, Evo-1, π0, π0.5, Octo-Small, GR00T-N1.5, N1.6 and N1.7, VLA-JEPA, TurboVLA, VLA-Adapter, OpenVLA-OFT, BitVLA, ACT) through 7 backends (CUDA, ROCm, Metal, CPU, SYCL, OpenVINO, Hexagon) on RTX 30xx–50xx, Radeon RX 9060 XT and Arc A380 GPUs, Apple M4, Core Ultra iGPU and NPU, Snapdragon X CPU and NPU, Dragonwing IQ-10, Jetson AGX Orin, Orin NX and Orin Nano, and Intel and AMD desktop CPUs."></div>
       <div class="tz-p" style="--x:165;--w:122.75"><img src="assets/teaser.svg" alt="(b) Task success vs. reference: vla.cpp LIBERO-Object success from the latest 200-episode run plotted against the reference rate. Eight of eleven models lie within 4 points of parity; SmolVLA (89.5% vs. 96%), GR00T-N1.6 (86.5% vs. 99%) and π0 (72% vs. 79%) fall below it. BitVLA and VLA-JEPA reach 100%."></div>
       <div class="tz-p" style="--x:287.75;--w:99.25"><img src="assets/teaser.svg" alt="(c) Ternary execution: BitVLA milliseconds per executed action, dp4a against the IMMA tensor-core kernel. RTX 3060: 172.8 vs. 37.9 ms (4.6×). AGX Orin: 406.6 vs. 101.1 ms (4.0×)."></div>
       <div class="tz-p" style="--x:387;--w:118.47"><img src="assets/teaser.svg" alt="(d) On the robot: UR10e task success with 95% intervals against round-trip latency. CUDA 75% at 111 ms (17.7 Hz), Metal 60% at 582 ms, CPU i9 60% at 2164 ms, CPU Ryzen 70% at 3653 ms (5.0 Hz): a 33× latency range."></div>
     </div>
     <figcaption><b><code>vla.cpp</code> across models and hardware.</b> (a) Shared runtime components
-      support thirteen VLA models on seven backends; backend coverage varies by model. (b)
+      support fourteen VLA models on seven backends; backend coverage varies by model. (b)
       LIBERO-Object success over 200 episodes per model, from the latest run on an RTX&nbsp;3090,
       against published rates or PyTorch reproductions (&pi;<sub>0</sub> and GR00T); the shaded band
       marks &plusmn;4 percentage points. All three models outside it replay a different number of
@@ -544,7 +544,7 @@ footer p{margin:.4rem 0}
   <h2>Abstract</h2>
   <p class="abstract">Deploying vision&ndash;language&ndash;action (VLA) models on robots requires
   adapting model-specific inference pipelines to heterogeneous processors and limited onboard
-  memory. We present <code>vla.cpp</code>, a unified C++ inference runtime for thirteen VLA models.
+  memory. We present <code>vla.cpp</code>, a unified C++ inference runtime for fourteen VLA models.
   The runtime shares model loading, tensor execution, and serving while retaining
   architecture-specific attention, conditioning, and action heads. Iterative policies reuse
   observation-dependent computation across solver steps; regression policies use a direct
